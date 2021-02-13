@@ -1,0 +1,37 @@
+{
+    "scripts": {
+        "PDDESEEM": {
+            "class": "PDDESEEM",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\pdd_theory.py",
+            "info": "This script calculates the expected PDD signal when the magnetic field angle is clse to 90 deg.\nESEEM effects from 15N and 13C are taken into account.\nNo other noise is considered. No electric field is present.\n- Ziwei Qiu 10/14/2020",
+            "package": "b26_toolkit",
+            "settings": {
+                "bias_fields": {
+                    "B_magnitude": 81.0,
+                    "phi_B": 0.0,
+                    "E_magnitude": 0.0,
+                    "theta_E": 0.0,
+                    "phi_E": 0.0
+                },
+                "B_zenith_angles": {
+                    "min_angle": 89,
+                    "max_angle": 91,
+                    "angle_step": 0.1
+                },
+                "tau_times": {
+                    "min_time": 200,
+                    "max_time": 10000,
+                    "time_step": 100
+                },
+                "decoupling_seq": {
+                    "type": "spin_echo",
+                    "num_of_pulse_blocks": 1
+                },
+                "B_carbon_rms": 50,
+                "path": "",
+                "tag": "pddeseem",
+                "save": false
+            }
+        }
+    }
+}

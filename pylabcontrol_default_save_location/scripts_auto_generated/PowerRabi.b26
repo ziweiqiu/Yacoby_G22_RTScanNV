@@ -1,0 +1,57 @@
+{
+    "scripts": {
+        "PowerRabi": {
+            "class": "PowerRabi",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\qm_scripts\\basic.py",
+            "info": "This script applies a microwave pulse at varying amplitudes for fixed tau to measure Rabi oscillations.\nPulses are controlled by a Quantum Machine. Note that the QM clock cycle is 4ns.\n\n- Ziwei Qiu 9/25/2020",
+            "package": "b26_toolkit",
+            "instruments": {
+                "mw_gen_iq": {
+                    "class": "SGS100ARFSource",
+                    "settings": {
+                        "VISA_address": "USB0::0x0AAD::0x0088::110207::0::INSTR",
+                        "frequency": 2870000000.0,
+                        "amplitude": -50,
+                        "enable_output": false,
+                        "enable_IQ": false,
+                        "ext_trigger": false
+                    }
+                }
+            },
+            "settings": {
+                "IP_address": "140.247.189.141",
+                "to_do": "simulation",
+                "mw_pulses": {
+                    "mw_frequency": 2870000000.0,
+                    "mw_power": -20.0,
+                    "IF_frequency": 100000000.0,
+                    "tau_time": 60,
+                    "phase": 0
+                },
+                "IF_amplitudes": {
+                    "min_amp": 16,
+                    "max_amp": 500,
+                    "amp_step": 16
+                },
+                "read_out": {
+                    "meas_len": 200,
+                    "nv_reset_time": 2000,
+                    "delay_readout": 440,
+                    "laser_off": 500,
+                    "delay_mw_readout": 600
+                },
+                "NV_tracking": {
+                    "on": false,
+                    "tracking_num": 10000,
+                    "ref_counts": -1,
+                    "tolerance": 0.3
+                },
+                "rep_num": 500000,
+                "simulation_duration": 10000,
+                "path": "",
+                "tag": "powerrabi",
+                "save": false
+            }
+        }
+    }
+}

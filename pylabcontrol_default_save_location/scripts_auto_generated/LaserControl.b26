@@ -1,0 +1,17 @@
+{
+    "scripts": {
+        "LaserControl": {
+            "class": "LaserControl",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\qm_scripts\\basic.py",
+            "info": "This script turns on and off the laser.\n- Ziwei Qiu 8/15/2020",
+            "package": "b26_toolkit",
+            "settings": {
+                "IP_address": "automatic",
+                "laser_on": false,
+                "path": "",
+                "tag": "lasercontrol",
+                "save": false
+            }
+        }
+    }
+}

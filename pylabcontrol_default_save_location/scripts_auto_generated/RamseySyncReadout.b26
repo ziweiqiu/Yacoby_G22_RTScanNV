@@ -1,0 +1,71 @@
+{
+    "scripts": {
+        "RamseySyncReadout": {
+            "class": "RamseySyncReadout",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\qm_scripts\\ramsey.py",
+            "info": "This script measures a time series of Ramsey signals synchronized with a slowly oscillating electric field.\nThis is effectively a classical lock-in measurement.\n\n- Ziwei Qiu 2/5/2021",
+            "package": "b26_toolkit",
+            "instruments": {
+                "afg": {
+                    "class": "Agilent33120A",
+                    "settings": {
+                        "VISA_address": "GPIB1::10::INSTR",
+                        "display_on": false,
+                        "output_load": "INFinity",
+                        "trigger_latency": 1144.0,
+                        "frequency": 4000000.0,
+                        "amplitude": 5.0,
+                        "offset": 0.0,
+                        "wave_shape": "SINusoid",
+                        "burst_mod": false,
+                        "burst_count": 2,
+                        "burst_phase": 2.0
+                    }
+                },
+                "mw_gen_iq": {
+                    "class": "SGS100ARFSource",
+                    "settings": {
+                        "VISA_address": "USB0::0x0AAD::0x0088::110207::0::INSTR",
+                        "frequency": 2870000000.0,
+                        "amplitude": -50,
+                        "enable_output": false,
+                        "enable_IQ": false,
+                        "ext_trigger": false
+                    }
+                }
+            },
+            "settings": {
+                "IP_address": "automatic",
+                "to_do": "simulation",
+                "signal": {
+                    "frequency": 1000.0,
+                    "amplitude": 2.0,
+                    "offset": 0.0,
+                    "wave_shape": "SINusoid"
+                },
+                "mw_pulses": {
+                    "mw_frequency": 2870000000.0,
+                    "mw_power": -20.0,
+                    "IF_frequency": 100000000.0,
+                    "IF_amp": 1.0,
+                    "detuning": 1000000.0,
+                    "pi_half_pulse_time": 50
+                },
+                "tau": 1000,
+                "ramsey_pts": 20,
+                "read_out": {
+                    "meas_len": 180,
+                    "nv_reset_time": 2000,
+                    "delay_readout": 370,
+                    "laser_off": 500,
+                    "delay_mw_readout": 600
+                },
+                "rep_num": 500000,
+                "simulation_duration": 10000,
+                "path": "",
+                "tag": "ramseysyncreadout",
+                "save": false
+            }
+        }
+    }
+}

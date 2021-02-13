@@ -1,0 +1,64 @@
+{
+    "instruments": {
+        "NI6733": {
+            "class": "NI6733",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\ni_daq.py",
+            "info": "\n    This class implements the NI6733 DAQ, which includes 8 AO channels. It inherits output functionality from the DAQ\n    class. (Used in G22B RT scanning setup)\n    ",
+            "settings": {
+                "device": "PXI1Slot3",
+                "override_buffer_size": -1,
+                "ao_read_offset": 0,
+                "analog_output": {
+                    "ao0": {
+                        "channel": 0,
+                        "sample_rate": 1000.0,
+                        "min_voltage": -10.0,
+                        "max_voltage": 10.0
+                    },
+                    "ao1": {
+                        "channel": 1,
+                        "sample_rate": 1000.0,
+                        "min_voltage": -10.0,
+                        "max_voltage": 10.0
+                    },
+                    "ao2": {
+                        "channel": 2,
+                        "sample_rate": 1000.0,
+                        "min_voltage": -10.0,
+                        "max_voltage": 10.0
+                    },
+                    "ao3": {
+                        "channel": 3,
+                        "sample_rate": 1000.0,
+                        "min_voltage": -10.0,
+                        "max_voltage": 10.0
+                    },
+                    "ao4": {
+                        "channel": 4,
+                        "sample_rate": 1000.0,
+                        "min_voltage": -10.0,
+                        "max_voltage": 10.0
+                    },
+                    "ao5": {
+                        "channel": 5,
+                        "sample_rate": 1000.0,
+                        "min_voltage": -10.0,
+                        "max_voltage": 10.0
+                    },
+                    "ao6": {
+                        "channel": 6,
+                        "sample_rate": 1000.0,
+                        "min_voltage": -10.0,
+                        "max_voltage": 10.0
+                    },
+                    "ao7": {
+                        "channel": 7,
+                        "sample_rate": 1000.0,
+                        "min_voltage": -10.0,
+                        "max_voltage": 10.0
+                    }
+                }
+            }
+        }
+    }
+}

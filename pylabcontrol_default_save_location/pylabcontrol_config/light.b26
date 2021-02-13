@@ -1,0 +1,18 @@
+{
+    "gui_settings": {
+        "data_folder": "C:\\Users\\NV\\RAW_DATA\\20201130_probe1126",
+        "probes_folder": "C:\\Users\\NV\\b26_toolkit-master\\pylabcontrol_default_save_location\\probes_auto_generated",
+        "instrument_folder": "C:/Users/NV/b26_toolkit-master/pylabcontrol_default_save_location/instruments_auto_generated/YokogawaGS200.b26",
+        "scripts_folder": "C:/Users/NV/b26_toolkit-master/pylabcontrol_default_save_location/scripts_auto_generated/ESR_RnS_qm.b26",
+        "probes_log_folder": "C:\\Users\\NV\\b26_toolkit-master\\pylabcontrol_default_save_location\\b26_tmp",
+        "gui_settings": "C:\\Users\\NV\\b26_toolkit-master\\pylabcontrol_default_save_location\\pylabcontrol_config\\light.b26"
+    },
+    "gui_settings_hidden": {
+        "scripts_source_folder": "C:/Users/NV/b26_toolkit-master/b26_toolkit",
+        "script_source_folder": ""
+    },
+    "scripts_hidden_parameters": {},
+    "instruments": {},
+    "scripts": {},
+    "probes": {}
+}

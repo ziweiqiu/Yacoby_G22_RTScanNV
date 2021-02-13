@@ -1,0 +1,85 @@
+{
+    "scripts": {
+        "SetObjectiveXY": {
+            "class": "SetObjectiveXY",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\set_laser.py",
+            "info": "This script sets the objective XY position\nupdated by Ziwei Qiu 7/13/2020",
+            "package": "scripts",
+            "instruments": {
+                "NI6733": {
+                    "class": "NI6733",
+                    "settings": {
+                        "device": "PXI1Slot3",
+                        "override_buffer_size": -1,
+                        "ao_read_offset": 0,
+                        "analog_output": {
+                            "ao0": {
+                                "channel": 0,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao1": {
+                                "channel": 1,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao2": {
+                                "channel": 2,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao3": {
+                                "channel": 3,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao4": {
+                                "channel": 4,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao5": {
+                                "channel": 5,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao6": {
+                                "channel": 6,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao7": {
+                                "channel": 7,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            }
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "point": {
+                    "x": 0.0,
+                    "y": 0.0
+                },
+                "patch_size": 0.005,
+                "DAQ_channels": {
+                    "x_ao_channel": "ao5",
+                    "y_ao_channel": "ao6"
+                },
+                "daq_type": "PCI",
+                "path": "",
+                "tag": "setobjectivexy",
+                "save": false
+            }
+        }
+    }
+}

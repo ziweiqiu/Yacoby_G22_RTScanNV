@@ -1,0 +1,49 @@
+{
+    "instruments": {
+        "NI6602": {
+            "class": "NI6602",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\ni_daq.py",
+            "info": "\n    This class implements the NI PCI-6602 DAQ, which is a 5 V, 8-Channel Counter/Timer Device.\n    Currently used in G22B RT scanning setup.\n    https://www.ni.com/pdf/manuals/372141b.pdf\n    https://neurophysics.ucsd.edu/Manuals/National%20Instruments/6601_6602%20User%20Manual.pdf\n    - updated by ZQ 7/13/2020\n    ",
+            "settings": {
+                "device": "PXI1Slot4",
+                "override_buffer_size": -1,
+                "digital_input": {
+                    "ctr0": {
+                        "input_channel": 0,
+                        "counter_PFI_channel": 39,
+                        "gate_PFI_channel": 38,
+                        "clock_PFI_channel": 36,
+                        "clock_counter_channel": 0,
+                        "sample_rate": 1000.0
+                    },
+                    "ctr1": {
+                        "input_channel": 1,
+                        "counter_PFI_channel": 35,
+                        "gate_PFI_channel": 34,
+                        "clock_PFI_channel": 32,
+                        "clock_counter_channel": 1,
+                        "sample_rate": 1000.0
+                    }
+                },
+                "digital_output": {
+                    "do0": {
+                        "channel": 0,
+                        "sample_rate": 1000.0
+                    },
+                    "do1": {
+                        "channel": 1,
+                        "sample_rate": 1000.0
+                    },
+                    "do3": {
+                        "channel": 3,
+                        "sample_rate": 1000.0
+                    },
+                    "do4": {
+                        "channel": 4,
+                        "sample_rate": 1000.0
+                    }
+                }
+            }
+        }
+    }
+}

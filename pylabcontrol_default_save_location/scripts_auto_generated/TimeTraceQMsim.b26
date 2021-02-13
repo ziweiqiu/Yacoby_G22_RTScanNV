@@ -1,0 +1,23 @@
+{
+    "scripts": {
+        "TimeTraceQMsim": {
+            "class": "TimeTraceQMsim",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\qm_scripts\\basic.py",
+            "info": "QObject(parent: QObject = None)",
+            "package": "b26_toolkit",
+            "settings": {
+                "IP_address": "140.247.189.141",
+                "rep_num": 10000000,
+                "simulation_duration": 5000,
+                "read_out": {
+                    "meas_len": 2000,
+                    "nv_reset_time": 2000,
+                    "delay_readout": 60
+                },
+                "path": "",
+                "tag": "timetraceqmsim",
+                "save": false
+            }
+        }
+    }
+}

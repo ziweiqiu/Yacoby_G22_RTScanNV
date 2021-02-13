@@ -1,0 +1,17 @@
+{
+    "instruments": {
+        "XPSQ8": {
+            "class": "XPSQ8",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\newport_xps.py",
+            "info": "\n    This class implements the Newport XPS Q8 motion controller. The class communicates with the device over ethernet.\n    Programmer's Manual: ftp://download.newport.com/MotionControl/Current/MotionControllers/XPS%20Unified/ Driver is\n    downloaded from Github: https://github.com/H-Plus-Time/newport-xps-q8 -Ziwei 8/24/2020\n    ",
+            "settings": {
+                "IP_address": "192.168.254.254",
+                "group": "Group1",
+                "enable_motion": false,
+                "position": 0.0,
+                "lower_limit": -5.0,
+                "upper_limit": 5.0
+            }
+        }
+    }
+}

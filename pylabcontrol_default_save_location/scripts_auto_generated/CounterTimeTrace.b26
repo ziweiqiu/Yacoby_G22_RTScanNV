@@ -1,0 +1,18 @@
+{
+    "scripts": {
+        "CounterTimeTrace": {
+            "class": "CounterTimeTrace",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\qm_scripts\\counter_time_trace.py",
+            "info": "QObject(parent: QObject = None)",
+            "package": "b26_toolkit",
+            "settings": {
+                "IP_address": "automatic",
+                "integration_time": 0.3,
+                "total_int_time": 10.0,
+                "path": "",
+                "tag": "countertimetrace",
+                "save": false
+            }
+        }
+    }
+}

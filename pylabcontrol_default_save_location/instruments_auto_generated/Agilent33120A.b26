@@ -1,0 +1,22 @@
+{
+    "instruments": {
+        "Agilent33120A": {
+            "class": "Agilent33120A",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\awg.py",
+            "info": "\n    This class implements the Keysight AFG/AWG 33120A. The class commuicates with the\n    device over GPIB using pyvisa.\n    Attention that this instrument has trigger latency = 1.144us.\n\n    -- Ziwei Qiu 6/25/2019\n    ",
+            "settings": {
+                "VISA_address": "GPIB1::10::INSTR",
+                "display_on": false,
+                "output_load": "INFinity",
+                "trigger_latency": 1144.0,
+                "frequency": 4000000.0,
+                "amplitude": 5.0,
+                "offset": 0.0,
+                "wave_shape": "SINusoid",
+                "burst_mod": false,
+                "burst_count": 2,
+                "burst_phase": 2.0
+            }
+        }
+    }
+}

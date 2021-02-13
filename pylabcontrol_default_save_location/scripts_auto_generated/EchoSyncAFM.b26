@@ -1,0 +1,51 @@
+{
+    "scripts": {
+        "EchoSyncAFM": {
+            "class": "EchoSyncAFM",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\qm_scripts\\afm_sync_sensing.py",
+            "info": "This scripts implements AFM motion-enabled DC sensing.\nAn echo sequence is used for sensing and synchronized with AFM motion. Tau is fixed.\nAFM frequency is typically of 32.65kHz.\nBe sure to check on the scope that the echo sequence is indeed synced with the AFM motion.\n    - Ziwei Qiu 1/22/2021",
+            "package": "b26_toolkit",
+            "instruments": {
+                "mw_gen_iq": {
+                    "class": "SGS100ARFSource",
+                    "settings": {
+                        "VISA_address": "USB0::0x0AAD::0x0088::110207::0::INSTR",
+                        "frequency": 2870000000.0,
+                        "amplitude": -50,
+                        "enable_output": false,
+                        "enable_IQ": false,
+                        "ext_trigger": false
+                    }
+                }
+            },
+            "settings": {
+                "IP_address": "automatic",
+                "to_do": "simulation",
+                "mw_pulses": {
+                    "mw_frequency": 2870000000.0,
+                    "mw_power": -10.0,
+                    "IF_frequency": 100000000.0,
+                    "IF_amp": 1.0,
+                    "pi_pulse_time": 72,
+                    "pi_half_pulse_time": 36,
+                    "3pi_half_pulse_time": 96
+                },
+                "tau": 10000,
+                "f_exc": 32.65,
+                "initial_delay_offset": 0.0,
+                "read_out": {
+                    "meas_len": 180,
+                    "nv_reset_time": 2000,
+                    "delay_readout": 370,
+                    "laser_off": 500,
+                    "delay_mw_readout": 600
+                },
+                "rep_num": 500000,
+                "simulation_duration": 10000,
+                "path": "",
+                "tag": "echosyncafm",
+                "save": false
+            }
+        }
+    }
+}

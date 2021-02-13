@@ -1,0 +1,26 @@
+{
+    "instruments": {
+        "R8SMicrowaveGenerator": {
+            "class": "R8SMicrowaveGenerator",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\microwave_generator.py",
+            "info": "\n    This class implements the ROHDE & SCHWARZ microwave generator SMB100A. The class commuicates with the\n    device over USB or GPIB using pyvisa.\n    Modified VISA Address on the scanning setup\n\n    -Ziwei (7/10/2020 5:50pm)\n    ",
+            "settings": {
+                "VISA_address": "GPIB0::28::INSTR",
+                "reference_oscillator": "INT10MHZ",
+                "enable_output": false,
+                "display_on": true,
+                "freq_mode": "CW",
+                "power_mode": "CW",
+                "edge": "Positive",
+                "frequency": 252000000.0,
+                "freq_start": 100000000.0,
+                "freq_stop": 400000000.0,
+                "freq_pts": 100,
+                "amplitude": -45,
+                "pwr_start": -20,
+                "pwr_stop": 0,
+                "pwr_pts": 20
+            }
+        }
+    }
+}

@@ -1,0 +1,49 @@
+{
+    "instruments": {
+        "G22BPulseBlaster": {
+            "class": "G22BPulseBlaster",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\pulse_blaster.py",
+            "info": "\n        This Instrument controls the SpinCore Pulseblaster used in the LISE G22B NV-RT Scanning Setup.\n        The internal clock speed is 400MHz.\n        Notice that the PB channels number labeled here is smaller than that in the MATLAB software by 1 due to the\n        stupid difference between MATLAB and Python\n        - Ziwei Qiu 7/12/2020\n    ",
+            "settings": {
+                "laser": {
+                    "channel": 0,
+                    "status": false,
+                    "delay_time": 455
+                },
+                "mw_switch": {
+                    "channel": 1,
+                    "status": false,
+                    "delay_time": 0
+                },
+                "apd_readout": {
+                    "channel": 2,
+                    "status": false,
+                    "delay_time": 0
+                },
+                "apd_switch": {
+                    "channel": 3,
+                    "status": false,
+                    "delay_time": 0
+                },
+                "channel_PB6": {
+                    "channel": 6,
+                    "status": false,
+                    "delay_time": 0
+                },
+                "channel_PB7": {
+                    "channel": 7,
+                    "status": false,
+                    "delay_time": 0
+                },
+                "channel_PB14": {
+                    "channel": 14,
+                    "status": false,
+                    "delay_time": 0
+                },
+                "clock_speed": 400,
+                "min_pulse_dur": 15,
+                "PB_type": "PCI"
+            }
+        }
+    }
+}

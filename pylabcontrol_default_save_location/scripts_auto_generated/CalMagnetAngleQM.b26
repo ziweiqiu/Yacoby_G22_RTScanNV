@@ -1,0 +1,20 @@
+{
+    "scripts": {
+        "CalMagnetAngleQM": {
+            "class": "CalMagnetAngleQM",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\esr_RnS.py",
+            "info": "This script simply calculates the angle between NV and the bias magnetic field by inputting two ESR resonance frequencies.\n\n--> written by Ziwei Qiu 9/24/2020",
+            "package": "b26_toolkit",
+            "settings": {
+                "LO_freq": 2870000000.0,
+                "esr1": 50000000.0,
+                "esr2": 100000000.0,
+                "zfs": 2870000000.0,
+                "gama": 2802800.0,
+                "path": "",
+                "tag": "calmagnetangleqm",
+                "save": false
+            }
+        }
+    }
+}

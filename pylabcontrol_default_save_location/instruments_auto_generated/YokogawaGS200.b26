@@ -1,0 +1,17 @@
+{
+    "instruments": {
+        "YokogawaGS200": {
+            "class": "YokogawaGS200",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\yokogawa.py",
+            "info": "\n        This class implements the very basic functions of Yokogawa DC Voltage/Current Source GS200.\n        The class communicates with the device over USB or GPIB using pyvisa.\n        Manual: https://cdn.tmi.yokogawa.com/1/6218/files/IMGS210-01EN.pdf\n        - Ziwei Qiu 10/3/2020\n    ",
+            "settings": {
+                "VISA_address": "USB0::0x0B21::0x0039::91U225587::0::INSTR",
+                "enable_output": false,
+                "source": "VOLT",
+                "level": 0.0,
+                "voltage_limit": 1.0,
+                "current_limit": 0.001
+            }
+        }
+    }
+}

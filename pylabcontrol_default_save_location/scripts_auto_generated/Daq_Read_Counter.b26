@@ -1,0 +1,98 @@
+{
+    "scripts": {
+        "Daq_Read_Counter": {
+            "class": "Daq_Read_Counter",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\daq_read_counter.py",
+            "info": "This script reads the Counter input from the DAQ and plots it. Only implemented for the PCI DAQ!!!!\nmodified by Ziwei Qiu 7/13/2020",
+            "package": "scripts",
+            "instruments": {
+                "NI6602": {
+                    "class": "NI6602",
+                    "settings": {
+                        "device": "PXI1Slot4",
+                        "override_buffer_size": -1,
+                        "digital_input": {
+                            "ctr0": {
+                                "input_channel": 0,
+                                "counter_PFI_channel": 39,
+                                "gate_PFI_channel": 38,
+                                "clock_PFI_channel": 36,
+                                "clock_counter_channel": 0,
+                                "sample_rate": 1000.0
+                            },
+                            "ctr1": {
+                                "input_channel": 1,
+                                "counter_PFI_channel": 35,
+                                "gate_PFI_channel": 34,
+                                "clock_PFI_channel": 32,
+                                "clock_counter_channel": 1,
+                                "sample_rate": 1000.0
+                            }
+                        },
+                        "digital_output": {
+                            "do0": {
+                                "channel": 0,
+                                "sample_rate": 1000.0
+                            },
+                            "do1": {
+                                "channel": 1,
+                                "sample_rate": 1000.0
+                            },
+                            "do3": {
+                                "channel": 3,
+                                "sample_rate": 1000.0
+                            },
+                            "do4": {
+                                "channel": 4,
+                                "sample_rate": 1000.0
+                            }
+                        }
+                    }
+                },
+                "PB": {
+                    "class": "G22BPulseBlaster",
+                    "settings": {
+                        "laser": {
+                            "channel": 0,
+                            "status": false,
+                            "delay_time": 455
+                        },
+                        "apd_readout": {
+                            "channel": 2,
+                            "status": false,
+                            "delay_time": 0
+                        },
+                        "apd_switch": {
+                            "channel": 3,
+                            "status": false,
+                            "delay_time": 0
+                        },
+                        "awg_trigger": {
+                            "channel": 1,
+                            "status": false,
+                            "delay_time": 0
+                        },
+                        "channel_PB14": {
+                            "channel": 14,
+                            "status": false,
+                            "delay_time": 0
+                        },
+                        "clock_speed": 400,
+                        "min_pulse_dur": 15,
+                        "PB_type": "PCI"
+                    }
+                }
+            },
+            "settings": {
+                "integration_time": 0.25,
+                "counter_channel": "ctr0",
+                "total_int_time": 3.0,
+                "laser_on_before": true,
+                "laser_off_after": true,
+                "path": "",
+                "tag": "daq_read_counter",
+                "save": false
+            }
+        }
+    }
+}

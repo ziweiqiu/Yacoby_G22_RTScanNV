@@ -1,0 +1,149 @@
+{
+    "scripts": {
+        "ESR_RnS_qm": {
+            "class": "ESR_RnS_qm",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\esr_RnS.py",
+            "info": "This class runs ESR on an NV center, outputing microwaves using a Rhode&Schwartz MicrowaveGenerator in the frequency sweep mode and reading in NV counts using a DAQ. This is relatively fast.\nThis script will repeat ESR until a good fit is found, however the minimum and maximum repetition numbers are specified.\nManual: https://scdn.rohde-schwarz.com/ur/pws/dl_downloads/dl_common_library/dl_manuals/gb_1/s/smb/SMB100A_OperatingManual_en_21.pdf\nLaser (AOM) is controlled by QM.\n\n--> Ziwei Qiu 8/16/2020",
+            "package": "b26_toolkit",
+            "instruments": {
+                "microwave_generator": {
+                    "class": "R8SMicrowaveGenerator",
+                    "settings": {
+                        "VISA_address": "GPIB0::28::INSTR",
+                        "reference_oscillator": "INT10MHZ",
+                        "enable_output": false,
+                        "display_on": true,
+                        "freq_mode": "CW",
+                        "power_mode": "CW",
+                        "edge": "Positive",
+                        "frequency": 252000000.0,
+                        "freq_start": 100000000.0,
+                        "freq_stop": 400000000.0,
+                        "freq_pts": 100,
+                        "amplitude": -45,
+                        "pwr_start": -20,
+                        "pwr_stop": 0,
+                        "pwr_pts": 20
+                    }
+                },
+                "NI6602": {
+                    "class": "NI6602",
+                    "settings": {
+                        "device": "PXI1Slot4",
+                        "override_buffer_size": -1,
+                        "digital_input": {
+                            "ctr0": {
+                                "input_channel": 0,
+                                "counter_PFI_channel": 39,
+                                "gate_PFI_channel": 38,
+                                "clock_PFI_channel": 24,
+                                "clock_counter_channel": 3,
+                                "sample_rate": 1000.0
+                            },
+                            "ctr1": {
+                                "input_channel": 1,
+                                "counter_PFI_channel": 35,
+                                "gate_PFI_channel": 34,
+                                "clock_PFI_channel": 24,
+                                "clock_counter_channel": 3,
+                                "sample_rate": 1000.0
+                            }
+                        },
+                        "digital_output": {
+                            "do0": {
+                                "channel": 0,
+                                "sample_rate": 1000.0
+                            },
+                            "do1": {
+                                "channel": 1,
+                                "sample_rate": 1000.0
+                            },
+                            "do3": {
+                                "channel": 3,
+                                "sample_rate": 1000.0
+                            },
+                            "do4": {
+                                "channel": 4,
+                                "sample_rate": 1000.0
+                            }
+                        }
+                    }
+                },
+                "PB": {
+                    "class": "G22BPulseBlaster",
+                    "settings": {
+                        "laser": {
+                            "channel": 0,
+                            "status": false,
+                            "delay_time": 455
+                        },
+                        "mw_switch": {
+                            "channel": 1,
+                            "status": false,
+                            "delay_time": 0
+                        },
+                        "apd_readout": {
+                            "channel": 2,
+                            "status": false,
+                            "delay_time": 0
+                        },
+                        "apd_switch": {
+                            "channel": 3,
+                            "status": false,
+                            "delay_time": 0
+                        },
+                        "channel_PB6": {
+                            "channel": 6,
+                            "status": false,
+                            "delay_time": 0
+                        },
+                        "channel_PB7": {
+                            "channel": 7,
+                            "status": false,
+                            "delay_time": 0
+                        },
+                        "channel_PB14": {
+                            "channel": 14,
+                            "status": false,
+                            "delay_time": 0
+                        },
+                        "clock_speed": 400,
+                        "min_pulse_dur": 15,
+                        "PB_type": "PCI"
+                    }
+                }
+            },
+            "settings": {
+                "IP_address": "140.247.189.141",
+                "power_out": -8.0,
+                "max_power_limit": 6,
+                "ini_stab_time": 8,
+                "esr_avg_min": 20,
+                "esr_avg_max": 50,
+                "freq_start": 2870000000.0,
+                "freq_stop": 200000000.0,
+                "range_type": "center_range",
+                "freq_points": 100,
+                "time_per_pt": 0.02,
+                "turn_off_after": true,
+                "norm_to_ref": true,
+                "save_full_esr": true,
+                "daq_type": "PCI",
+                "fit_constants": {
+                    "num_of_peaks": -1,
+                    "minimum_counts": 0.9,
+                    "contrast_factor": 3.0,
+                    "zfs": 2870000000.0,
+                    "gama": 2802800.0
+                },
+                "track_laser_power": {
+                    "on/off": false,
+                    "ai_channel": "ai4"
+                },
+                "path": "",
+                "tag": "esr_rns_qm",
+                "save": false
+            }
+        }
+    }
+}

@@ -1,0 +1,196 @@
+{
+    "scripts": {
+        "SetScannerXY_gentle": {
+            "class": "SetScannerXY_gentle",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\set_laser.py",
+            "info": "This script sets the attocube scanner X and Y voltages\nUser can define the step size.\n- Ziwei Qiu 9/9/2020",
+            "package": "b26_toolkit",
+            "instruments": {
+                "NI6733": {
+                    "class": "NI6733",
+                    "settings": {
+                        "device": "PXI1Slot3",
+                        "override_buffer_size": -1,
+                        "ao_read_offset": 0,
+                        "analog_output": {
+                            "ao0": {
+                                "channel": 0,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao1": {
+                                "channel": 1,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao2": {
+                                "channel": 2,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao3": {
+                                "channel": 3,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao4": {
+                                "channel": 4,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao5": {
+                                "channel": 5,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao6": {
+                                "channel": 6,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ao7": {
+                                "channel": 7,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            }
+                        }
+                    }
+                },
+                "NI6220": {
+                    "class": "NI6220",
+                    "settings": {
+                        "device": "PXI1Slot5",
+                        "override_buffer_size": -1,
+                        "ao_read_offset": 0,
+                        "analog_input": {
+                            "ai0": {
+                                "channel": 0,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai1": {
+                                "channel": 1,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai2": {
+                                "channel": 2,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai3": {
+                                "channel": 3,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai4": {
+                                "channel": 4,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai5": {
+                                "channel": 5,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai6": {
+                                "channel": 6,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai7": {
+                                "channel": 7,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai8": {
+                                "channel": 8,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai9": {
+                                "channel": 9,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai10": {
+                                "channel": 10,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai11": {
+                                "channel": 11,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai12": {
+                                "channel": 12,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai13": {
+                                "channel": 13,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai14": {
+                                "channel": 14,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            },
+                            "ai15": {
+                                "channel": 15,
+                                "sample_rate": 1000.0,
+                                "min_voltage": -10.0,
+                                "max_voltage": 10.0
+                            }
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "to_do": "read",
+                "verbose": true,
+                "point": {
+                    "x": 0.0,
+                    "y": 0.0
+                },
+                "DAQ_channels": {
+                    "x_ao_channel": "ao0",
+                    "y_ao_channel": "ao1",
+                    "x_ai_channel": "ai3",
+                    "y_ai_channel": "ai4"
+                },
+                "step_size": 0.0001,
+                "scan_speed": 0.04,
+                "daq_type": "PCI",
+                "path": "",
+                "tag": "setscannerxy_gentle",
+                "save": false
+            }
+        }
+    }
+}

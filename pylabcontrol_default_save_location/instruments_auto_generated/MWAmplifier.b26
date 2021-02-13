@@ -1,0 +1,14 @@
+{
+    "instruments": {
+        "MWAmplifier": {
+            "class": "MWAmplifier",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\mw_amplifier.py",
+            "info": "\n        This class implements the AR Microwave Amplifier 30S1G6. The class commuicates with the\n        device over USB.\n        Manual: https://www.arworld.us/post/opMan/30S1G6-rev%20A.pdf\n        -Ziwei 8/16/2020\n    ",
+            "settings": {
+                "VISA_address": "USB0::0x0547::0x1B58::0349484::0::INSTR",
+                "power_on": false,
+                "gain": 0.8
+            }
+        }
+    }
+}

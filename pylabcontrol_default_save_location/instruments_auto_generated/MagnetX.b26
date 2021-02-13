@@ -1,0 +1,17 @@
+{
+    "instruments": {
+        "MagnetX": {
+            "class": "MagnetX",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\newport_xps.py",
+            "info": "\n        Same as XPSQ8 except the IP address and group name are fixed\n        - Ziwei Qiu 8/24/2020\n    ",
+            "settings": {
+                "IP_address": "192.168.254.254",
+                "group": "Group1",
+                "enable_motion": false,
+                "position": 0.0,
+                "lower_limit": -5.0,
+                "upper_limit": 5.0
+            }
+        }
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "instruments": {
+        "SGS100ARFSource": {
+            "class": "SGS100ARFSource",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\microwave_generator.py",
+            "info": "\n        This class implements the ROHDE & SCHWARZ RF Source SGS100A. The class commuicates with the\n        device over USB or GPIB using pyvisa.\n        Manual: https://micro-electronics.ru/upload/iblock/4f3/4f31ef667b3f4ecee2058f6c1e7c4d1c.pdf\n        -Ziwei 7/15/2020\n    ",
+            "settings": {
+                "VISA_address": "USB0::0x0AAD::0x0088::110207::0::INSTR",
+                "frequency": 2870000000.0,
+                "amplitude": -50,
+                "enable_output": false,
+                "enable_IQ": false,
+                "ext_trigger": false
+            }
+        }
+    }
+}

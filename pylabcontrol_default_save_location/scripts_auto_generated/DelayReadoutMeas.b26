@@ -1,0 +1,28 @@
+{
+    "scripts": {
+        "DelayReadoutMeas": {
+            "class": "DelayReadoutMeas",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\qm_scripts\\calibration.py",
+            "info": "This script calibrates the delay time needed between turning on the laser and starting APD measurement.\n- Ziwei Qiu 9/1/2020",
+            "package": "b26_toolkit",
+            "settings": {
+                "IP_address": "automatic",
+                "to_do": "simulation",
+                "delay_times": {
+                    "min_time": 16,
+                    "max_time": 2500,
+                    "time_step": 48
+                },
+                "rep_num": 100000,
+                "simulation_duration": 5000,
+                "read_out": {
+                    "meas_len": 200,
+                    "nv_reset_time": 1000
+                },
+                "path": "",
+                "tag": "delayreadoutmeas",
+                "save": false
+            }
+        }
+    }
+}

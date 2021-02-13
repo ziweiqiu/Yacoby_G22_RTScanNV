@@ -1,0 +1,64 @@
+{
+    "scripts": {
+        "Daq_Read_Counter_qm": {
+            "class": "Daq_Read_Counter_qm",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\daq_read_counter.py",
+            "info": "This script reads the Counter input from the DAQ and plots it. Laser (AOM) is controlled by QM.\nmodified by Ziwei Qiu 8/16/2020",
+            "package": "b26_toolkit",
+            "instruments": {
+                "NI6602": {
+                    "class": "NI6602",
+                    "settings": {
+                        "device": "PXI1Slot4",
+                        "override_buffer_size": -1,
+                        "digital_input": {
+                            "ctr0": {
+                                "input_channel": 0,
+                                "counter_PFI_channel": 39,
+                                "gate_PFI_channel": 38,
+                                "clock_PFI_channel": 24,
+                                "clock_counter_channel": 3,
+                                "sample_rate": 1000.0
+                            },
+                            "ctr1": {
+                                "input_channel": 1,
+                                "counter_PFI_channel": 35,
+                                "gate_PFI_channel": 34,
+                                "clock_PFI_channel": 24,
+                                "clock_counter_channel": 3,
+                                "sample_rate": 1000.0
+                            }
+                        },
+                        "digital_output": {
+                            "do0": {
+                                "channel": 0,
+                                "sample_rate": 1000.0
+                            },
+                            "do1": {
+                                "channel": 1,
+                                "sample_rate": 1000.0
+                            },
+                            "do3": {
+                                "channel": 3,
+                                "sample_rate": 1000.0
+                            },
+                            "do4": {
+                                "channel": 4,
+                                "sample_rate": 1000.0
+                            }
+                        }
+                    }
+                }
+            },
+            "settings": {
+                "IP_address": "automatic",
+                "integration_time": 0.25,
+                "counter_channel": "ctr0",
+                "total_int_time": 5.0,
+                "path": "",
+                "tag": "daq_read_counter_qm",
+                "save": false
+            }
+        }
+    }
+}
