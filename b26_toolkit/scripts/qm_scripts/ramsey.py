@@ -1698,7 +1698,7 @@ class RamseySyncReadout(Script):
             plot_qmsimulation_samples(axes_list[2], data)
 
         if 'tau' in data.keys() and 'signal_avg_vec' in data.keys():
-            x_array = np.arange(self.ramsey_pts)
+            x_array = np.arange(len(data['signal_avg_vec'][0, :]))
 
             axes_list[2].clear()
             if data['signal_avg_vec'] is not None:

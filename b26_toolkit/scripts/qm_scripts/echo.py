@@ -3007,6 +3007,7 @@ class ACSensingAnalogGate(Script):
                 config['pulses']['pi2_pulse']['length'] = int(pi2_time * 4)
                 config['pulses']['pi32_pulse']['length'] = int(pi32_time * 4)
 
+                config['elements']['gate']['intermediate_frequency'] = 0
                 config['controllers']['con1']['analog_outputs'][5]['offset'] = self.settings['gate_voltages']['offset']
                 config['waveforms']['const_gate1']['sample'] = self.settings['gate_voltages']['gate1']
                 config['waveforms']['const_gate2']['sample'] = self.settings['gate_voltages']['gate2']
@@ -3687,6 +3688,7 @@ class AC_AGate_SingleTau(Script):
                 config['pulses']['pi2_pulse']['length'] = int(pi2_time * 4)
                 config['pulses']['pi32_pulse']['length'] = int(pi32_time * 4)
 
+                config['elements']['gate']['intermediate_frequency'] = 0
                 config['controllers']['con1']['analog_outputs'][5]['offset'] = self.settings['gate_voltages']['offset']
                 config['waveforms']['const_gate1']['sample'] = self.settings['gate_voltages']['gate1']
                 config['waveforms']['const_gate2']['sample'] = self.settings['gate_voltages']['gate2']
@@ -4373,6 +4375,7 @@ class ACSensingSweepGate(Script):
                 gate1_config = np.max(np.abs(self.gate1_list))
                 gate2_config = np.max(np.abs(self.gate2_list))
 
+                config['elements']['gate']['intermediate_frequency'] = 0
                 config['controllers']['con1']['analog_outputs'][5]['offset'] = self.settings['gate_voltages']['offset']
                 config['waveforms']['const_gate1']['sample'] = gate1_config
                 config['waveforms']['const_gate2']['sample'] = gate2_config

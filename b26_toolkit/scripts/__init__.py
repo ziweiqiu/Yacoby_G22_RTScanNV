@@ -26,7 +26,7 @@ from .qm_scripts.ramsey import RamseyQM, RamseyQM_v2, Ramsey_SingleTau, DCSensin
 from .qm_scripts.pulsed_esr import PulsedESR
 from .qm_scripts.counter_time_trace import CounterTimeTrace
 from .qm_scripts.berry_phase import BerryPhaseSweepCurrent
-from .qm_scripts.lock_in import PDDLockInSweepGate, RamseyLockInOPX, PDDLockInFixedGate, PDDLockInSweepPhase
+from .qm_scripts.lock_in import PDDLockInSweepGate, RamseyLockInOPX, PDDLockInFixedGate, PDDLockInSweepPhase, PDDLockInDelayMeas
 from .galvo_scan.confocal_scan_G22B import ObjectiveScan_qm, ObjectiveScanNoLaser, AFM1D_qm, AFM2D_qm, AFM2D_qm_v2
 from .set_laser import SetObjectiveZ, SetObjectiveXY, SetScannerXY_gentle, ReadScannerZ
 from .daq_read_counter import Daq_Read_Counter_qm
