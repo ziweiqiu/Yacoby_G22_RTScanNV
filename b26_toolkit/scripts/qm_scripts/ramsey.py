@@ -1513,7 +1513,8 @@ class RamseySyncReadout(Script):
                     with for_(n, 0, n < rep_num, n + 1):
                         with for_(k, 0, k < 4, k + 1):
                             reset_frame('qubit')
-                            wait_for_trigger('qubit')
+                            if self.settings['to_do'] == 'execution':
+                                wait_for_trigger('qubit')
                             with if_(k == 0):  # +x readout
                                 align('qubit', 'laser', 'readout1', 'readout2')
                                 play('trig', 'laser', duration=nv_reset_time)

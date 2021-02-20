@@ -47,9 +47,9 @@ class EchoQM(Script):
             Parameter('time_step', 100, int, 'time step increment of time between the two pi pulses (in ns)')
         ]),
         Parameter('read_out', [
-            Parameter('meas_len', 200, int, 'measurement time in ns'),
+            Parameter('meas_len', 180, int, 'measurement time in ns'),
             Parameter('nv_reset_time', 2000, int, 'laser on time in ns'),
-            Parameter('delay_readout', 440, int,
+            Parameter('delay_readout', 370, int,
                       'delay between laser on and APD readout (given by spontaneous decay rate) in ns'),
             Parameter('laser_off', 500, int, 'laser off time in ns before applying RF'),
             Parameter('delay_mw_readout', 600, int, 'delay between mw off and laser on')
@@ -959,9 +959,9 @@ class PDDSingleTau(Script):
             Parameter('num_of_pulse_blocks', 1, int, 'number of pulse blocks.'),
         ]),
         Parameter('read_out', [
-            Parameter('meas_len', 200, int, 'measurement time in ns'),
+            Parameter('meas_len', 180, int, 'measurement time in ns'),
             Parameter('nv_reset_time', 2000, int, 'laser on time in ns'),
-            Parameter('delay_readout', 400, int,
+            Parameter('delay_readout', 370, int,
                       'delay between laser on and APD readout (given by spontaneous decay rate) in ns'),
             Parameter('laser_off', 500, int, 'laser off time in ns before applying RF'),
             Parameter('delay_mw_readout', 600, int, 'delay between mw off and laser on')
@@ -1050,7 +1050,7 @@ class PDDSingleTau(Script):
                 elif self.settings['decoupling_seq']['type'] == 'XY8':
                     num_of_evolution_blocks = 8 * number_of_pulse_blocks
 
-                # tau times between the first pi/2 and pi pulse edges in cycles of 4ns
+                # times between the first pi/2 and pi pulse edges in cycles of 4ns
                 t = round(self.settings['tau'] / num_of_evolution_blocks / 2 / 4 - pi2_time / 2 - pi_time / 2)
                 t = int(np.max([t, 4]))
 
@@ -1477,9 +1477,9 @@ class ACSensingDigitalGate(Script):
         ]),
         Parameter('sensing_type', 'cosine', ['cosine', 'sine', 'both'], 'choose the sensing type'),
         Parameter('read_out', [
-            Parameter('meas_len', 200, int, 'measurement time in ns'),
+            Parameter('meas_len', 180, int, 'measurement time in ns'),
             Parameter('nv_reset_time', 2000, int, 'laser on time in ns'),
-            Parameter('delay_readout', 400, int,
+            Parameter('delay_readout', 370, int,
                       'delay between laser on and APD readout (given by spontaneous decay rate) in ns'),
             Parameter('laser_off', 500, int, 'laser off time in ns before applying RF'),
             Parameter('delay_mw_readout', 600, int, 'delay between mw off and laser on')
@@ -2261,9 +2261,9 @@ class AC_DGate_SingleTau(Script):
         ]),
         Parameter('sensing_type', 'cosine', ['cosine', 'sine', 'both'], 'choose the sensing type'),
         Parameter('read_out', [
-            Parameter('meas_len', 200, int, 'measurement time in ns'),
+            Parameter('meas_len', 180, int, 'measurement time in ns'),
             Parameter('nv_reset_time', 2000, int, 'laser on time in ns'),
-            Parameter('delay_readout', 400, int,
+            Parameter('delay_readout', 370, int,
                       'delay between laser on and APD readout (given by spontaneous decay rate) in ns'),
             Parameter('laser_off', 500, int, 'laser off time in ns before applying RF'),
             Parameter('delay_mw_readout', 600, int, 'delay between mw off and laser on')
@@ -2949,9 +2949,9 @@ class ACSensingAnalogGate(Script):
         ]),
         Parameter('sensing_type', 'cosine', ['cosine', 'sine', 'both'], 'choose the sensing type'),
         Parameter('read_out', [
-            Parameter('meas_len', 200, int, 'measurement time in ns'),
+            Parameter('meas_len', 180, int, 'measurement time in ns'),
             Parameter('nv_reset_time', 2000, int, 'laser on time in ns'),
-            Parameter('delay_readout', 400, int,
+            Parameter('delay_readout', 370, int,
                       'delay between laser on and APD readout (given by spontaneous decay rate) in ns'),
             Parameter('laser_off', 500, int, 'laser off time in ns before applying RF'),
             Parameter('delay_mw_readout', 600, int, 'delay between mw off and laser on')
@@ -3630,9 +3630,9 @@ class AC_AGate_SingleTau(Script):
         ]),
         Parameter('sensing_type', 'cosine', ['cosine', 'sine', 'both'], 'choose the sensing type'),
         Parameter('read_out', [
-            Parameter('meas_len', 200, int, 'measurement time in ns'),
+            Parameter('meas_len', 180, int, 'measurement time in ns'),
             Parameter('nv_reset_time', 2000, int, 'laser on time in ns'),
-            Parameter('delay_readout', 400, int,
+            Parameter('delay_readout', 370, int,
                       'delay between laser on and APD readout (given by spontaneous decay rate) in ns'),
             Parameter('laser_off', 500, int, 'laser off time in ns before applying RF'),
             Parameter('delay_mw_readout', 600, int, 'delay between mw off and laser on')
@@ -4290,9 +4290,9 @@ class ACSensingSweepGate(Script):
         ]),
         Parameter('sensing_type', 'cosine', ['cosine', 'sine', 'both'], 'choose the sensing type'),
         Parameter('read_out', [
-            Parameter('meas_len', 200, int, 'measurement time in ns'),
+            Parameter('meas_len', 180, int, 'measurement time in ns'),
             Parameter('nv_reset_time', 2000, int, 'laser on time in ns'),
-            Parameter('delay_readout', 400, int,
+            Parameter('delay_readout', 370, int,
                       'delay between laser on and APD readout (given by spontaneous decay rate) in ns'),
             Parameter('laser_off', 500, int, 'laser off time in ns before applying RF'),
             Parameter('delay_mw_readout', 600, int, 'delay between mw off and laser on')

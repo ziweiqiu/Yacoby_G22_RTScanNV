@@ -290,12 +290,12 @@ class ScanningACSensing(Script):
                    Parameter('y', 0, float, 'last y-coordinate [V]')
                    ]),
         Parameter('num_points', 100, int, 'number of points for NV measurement'),
-        Parameter('scan_speed', 0.04, [0.01, 0.02, 0.04, 0.06, 0.08, 0.1],
+        Parameter('scan_speed', 0.02, [0.01, 0.02, 0.04, 0.06, 0.08, 0.1],
                   '[V/s] scanning speed on average. suggest 0.04V/s, i.e. 200nm/s.'),
         Parameter('gate_type', 'analog', ['analog', 'digital'],
                   'define the gate type. if digital, the gate is output from OPX D5, if analog, the gate is output from OPX A5'),
         Parameter('do_afm1d',
-                  [Parameter('before', True, bool, 'whether to do a round-trip afm 1d before the experiment starts'),
+                  [Parameter('before', False, bool, 'whether to do a round-trip afm 1d before the experiment starts'),
                    Parameter('num_of_cycles', 1, int, 'number of forward and backward scans before the experiment starts'),
                    Parameter('after', True, bool, 'whether to scan back to the original point after the experiment is done'),
                    ]),
@@ -658,7 +658,6 @@ Attention! AFM just failed BUT the tip CANNOT be retracted. Please take action!"
             except Exception as e:
                 print('** ATTENTION **')
                 print(e)
-
 
             try:
                 ac_sig, norm_sig, exact_tau, coherence, phase = self.do_ac_sensing(index=i+1)
@@ -1059,7 +1058,6 @@ class ScanningACSensing2D(Script):
             except Exception as e:
                 print('** ATTENTION in creating ANC_sample **')
                 print(e)
-
 
     def _check_AFM(self):
         z_out = self.daq_in_usbAI.get_analog_voltages([self.settings['DAQ_channels']['z_usb_ai_channel']])
