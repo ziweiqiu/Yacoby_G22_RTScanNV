@@ -533,6 +533,379 @@ class RabiQM(Script):
         return axes_list
 
 
+class RabiPlusMinus(Script):
+    """
+        This script implements Rabi between the plus and minus state under a perpendicular magnetic field.
+        - Ziwei Qiu 3/7/2021
+    """
+    _DEFAULT_SETTINGS = [
+        Parameter('IP_address', 'automatic', ['140.247.189.191', 'automatic'],
+                  'IP address of the QM server'),
+        Parameter('to_do', 'execution', ['simulation', 'execution', 'reconnection'],
+                  'choose to do output simulation or real experiment'),
+        Parameter('mw_pulses', [
+            Parameter('mw_frequency', 2.87e9, float, 'LO frequency in Hz'),
+            Parameter('mw_power', -20.0, float, 'RF power in dBm'),
+            Parameter('IF_amp', 1.0, float, 'amplitude of the IF pulse, between 0 and 1'),
+            Parameter('pi_frequency', 'esr2', ['esr1', 'esr2'], 'the pi pulse frequency'),
+            Parameter('pi_pulse_time', 72, float, 'time duration of a pi pulse (in ns)'),
+            Parameter('esr1', 2.0e7, float, 'the minus state IF frequency in Hz'),
+            Parameter('esr2', 5.0e7, float, 'the plus state IF frequency in Hz'),
+            Parameter('subqubit_IF_amp', 1.0, float, 'amplitude of the subqubit IF pulse, between 0 and 1'),
+
+        ]),
+        Parameter('tau_times', [
+            Parameter('min_time', 16, int, 'minimum time for rabi oscillations (in ns), >=16ns'),
+            Parameter('max_time', 500, int, 'total time of rabi oscillations (in ns)'),
+            Parameter('time_step', 12, int,
+                      'time step increment of rabi pulse duration (in ns), using multiples of 4ns')
+        ]),
+        Parameter('read_out', [
+            Parameter('meas_len', 180, int, 'measurement time in ns'),
+            Parameter('nv_reset_time', 2000, int, 'laser on time in ns'),
+            Parameter('delay_readout', 370, int,
+                      'delay between laser on and APD readout (given by spontaneous decay rate) in ns'),
+            Parameter('laser_off', 500, int, 'laser off time in ns before applying RF'),
+            Parameter('delay_mw_readout', 600, int, 'delay between mw off and laser on')
+        ]),
+
+        Parameter('rep_num', 500000, int, 'define the repetition number'),
+        Parameter('simulation_duration', 10000, int, 'duration of simulation in ns'),
+    ]
+    _INSTRUMENTS = {'mw_gen_iq': SGS100ARFSource}
+    _SCRIPTS = {}
+
+    def __init__(self, instruments=None, scripts=None, name=None, settings=None, log_function=None, data_path=None):
+
+        Script.__init__(self, name, settings=settings, instruments=instruments, scripts=scripts,
+                        log_function=log_function, data_path=data_path)
+
+        self._connect()
+
+    def _connect(self):
+        if self.settings['IP_address'] == 'automatic':
+            try:
+                self.qmm = QuantumMachinesManager()
+            except Exception as e:
+                print('** ATTENTION **')
+                print(e)
+        else:
+            try:
+                self.qmm = QuantumMachinesManager(host=self.settings['IP_address'])
+            except Exception as e:
+                print('** ATTENTION **')
+                print(e)
+
+    def _function(self):
+        if self.settings['to_do'] == 'reconnection':
+            self._connect()
+        else:
+            try:
+                # unit: cycle of 4ns
+                pi_time = round(self.settings['mw_pulses']['pi_pulse_time'] / 4)
+                # unit: ns
+                config['pulses']['pi_pulse']['length'] = int(pi_time * 4)
+                self.qm = self.qmm.open_qm(config)
+            except Exception as e:
+                print('** ATTENTION **')
+                print(e)
+            else:
+                rep_num = self.settings['rep_num']
+                # tracking_num = self.settings['NV_tracking']['tracking_num']
+                self.meas_len = round(self.settings['read_out']['meas_len'])
+
+                delay_readout = round(self.settings['read_out']['delay_readout'] / 4)
+                nv_reset_time = round(self.settings['read_out']['nv_reset_time'] / 4)
+                laser_off = round(self.settings['read_out']['laser_off'] / 4)
+                delay_mw_readout = round(self.settings['read_out']['delay_mw_readout'] / 4)
+                IF_amp = self.settings['mw_pulses']['IF_amp']
+                if IF_amp > 1.0:
+                    IF_amp = 1.0
+                elif IF_amp < 0.0:
+                    IF_amp = 0.0
+
+                subqubit_IF_amp = self.settings['mw_pulses']['subqubit_IF_amp']
+                if subqubit_IF_amp > 1.0:
+                    subqubit_IF_amp = 1.0
+                elif subqubit_IF_amp < 0.0:
+                    subqubit_IF_amp = 0.0
+
+                tau_start = np.max([round(self.settings['tau_times']['min_time']), 16])
+                tau_end = round(self.settings['tau_times']['max_time'])
+                tau_step = round(self.settings['tau_times']['time_step'])
+                self.t_vec = [int(a_) for a_ in
+                              np.arange(round(np.ceil(tau_start / 4)), round(np.ceil(tau_end / 4)),
+                                        round(np.ceil(tau_step / 4)))]
+                t_vec = self.t_vec
+                t_num = len(self.t_vec)
+                print('t_vec [ns]: ', np.array(self.t_vec) * 4)
+
+                res_len = int(np.max([round(self.meas_len / 200), 2]))  # result length needs to be at least 2
+
+                pi_frequency = self.settings['mw_pulses'][self.settings['mw_pulses']['pi_frequency']]
+                subqubit_frequency = round(
+                    np.abs(self.settings['mw_pulses']['esr1'] - self.settings['mw_pulses']['esr2']))
+
+                # define the qua program
+                with program() as rabi:
+                    update_frequency('qubit', pi_frequency)
+                    update_frequency('sub_qubit', subqubit_frequency)
+
+                    result1 = declare(int, size=res_len)
+                    counts1 = declare(int, value=0)
+                    result2 = declare(int, size=res_len)
+                    counts2 = declare(int, value=0)
+                    total_counts = declare(int, value=0)
+                    t = declare(int)
+                    n = declare(int)
+
+                    # # the following two variable are used to flag tracking
+                    # assign(IO1, False)
+                    # flag = declare(bool, value=False)
+                    total_counts_st = declare_stream()
+                    rep_num_st = declare_stream()
+
+                    with for_(n, 0, n < rep_num, n + 1):
+                        # # Check if tracking is called
+                        # assign(flag, IO1)
+                        # # with while_(flag):
+                        # #     play('trig', 'laser', duration=10000)
+                        # with if_(flag):
+                        #     pause()
+                        with for_each_(t, t_vec):
+                            reset_frame('qubit')
+
+                            play('pi' * amp(IF_amp), 'qubit')
+                            align('qubit', 'sub_qubit')
+                            wait(20, 'sub_qubit')
+                            play('const' * amp(subqubit_IF_amp), 'sub_qubit', duration=t)
+                            align('qubit', 'sub_qubit')
+                            wait(20, 'qubit')
+                            play('pi' * amp(IF_amp), 'qubit')
+
+                            align('qubit', 'sub_qubit', 'laser', 'readout1', 'readout2')
+                            wait(delay_mw_readout, 'laser', 'readout1', 'readout2')
+                            play('trig', 'laser', duration=nv_reset_time)
+                            wait(delay_readout, 'readout1', 'readout2')
+                            measure('readout', 'readout1', None,
+                                    time_tagging.raw(result1, self.meas_len, targetLen=counts1))
+                            measure('readout', 'readout2', None,
+                                    time_tagging.raw(result2, self.meas_len, targetLen=counts2))
+
+                            align('qubit', 'sub_qubit', 'laser', 'readout1', 'readout2')
+                            wait(laser_off, 'qubit')
+
+                            assign(total_counts, counts1 + counts2)
+                            save(total_counts, total_counts_st)
+                            save(n, rep_num_st)
+                            save(total_counts, "total_counts")
+
+                    with stream_processing():
+                        total_counts_st.buffer(t_num).average().save("live_rabi_data")
+                        # total_counts_st.buffer(tracking_num).save("current_counts")
+                        rep_num_st.save("live_rep_num")
+
+                with program() as job_stop:
+                    play('trig', 'laser', duration=10)
+
+                if self.settings['to_do'] == 'simulation':
+                    self._qm_simulation(rabi)
+                elif self.settings['to_do'] == 'execution':
+                    self._qm_execution(rabi, job_stop)
+                self._abort = True
+
+    def _qm_simulation(self, qua_program):
+        start = time.time()
+        job_sim = self.qm.simulate(qua_program, SimulationConfig(round(self.settings['simulation_duration'] / 4)))
+        # job.get_simulated_samples().con1.plot()
+        end = time.time()
+        print('QM simulation took {:.1f}s.'.format(end - start))
+        self.log('QM simulation took {:.1f}s.'.format(end - start))
+        samples = job_sim.get_simulated_samples().con1
+        self.data = {'analog': samples.analog,
+                     'digital': samples.digital}
+
+    def _qm_execution(self, qua_program, job_stop):
+
+        self.instruments['mw_gen_iq']['instance'].update({'amplitude': self.settings['mw_pulses']['mw_power']})
+        self.instruments['mw_gen_iq']['instance'].update({'frequency': self.settings['mw_pulses']['mw_frequency']})
+        self.instruments['mw_gen_iq']['instance'].update({'enable_IQ': True})
+        self.instruments['mw_gen_iq']['instance'].update({'ext_trigger': True})
+        self.instruments['mw_gen_iq']['instance'].update({'enable_output': True})
+        print('Turned on RF generator SGS100A (IQ on, trigger on).')
+
+        job = self.qm.execute(qua_program)
+
+        vec_handle = job.result_handles.get("live_rabi_data")
+        progress_handle = job.result_handles.get("live_rep_num")
+        # tracking_handle = job.result_handles.get("current_counts")
+
+        vec_handle.wait_for_values(1)
+        progress_handle.wait_for_values(1)
+        # tracking_handle.wait_for_values(1)
+        self.data = {'t_vec': np.array(self.t_vec) * 4, 'signal_avg_vec': None, 'ref_cnts': None, 'rep_num': None}
+
+        while vec_handle.is_processing():
+            try:
+                vec = vec_handle.fetch_all()
+            except Exception as e:
+                print('** ATTENTION **')
+                print(e)
+            else:
+                rabi_avg = vec * 1e6 / self.meas_len
+                self.data.update({'signal_avg_vec': rabi_avg / rabi_avg[0], 'ref_cnts': rabi_avg[0]})
+
+            # do fitting
+            try:
+                rabi_fits = fit_rabi_decay(self.data['t_vec'], self.data['signal_avg_vec'], variable_phase=True)
+            except Exception as e:
+                print('** ATTENTION **')
+                print(e)
+            else:
+                fits = rabi_fits[0]
+                RabiT = 2 * np.pi / fits[1]
+                phaseoffs = fits[2]
+
+                self.data['fits'] = fits
+                self.data['phaseoffs'] = phaseoffs * RabiT / (2 * np.pi)
+                self.data['pi_time'] = RabiT / 2 - phaseoffs * RabiT / (2 * np.pi)
+                self.data['pi_half_time'] = RabiT / 4 - phaseoffs * RabiT / (2 * np.pi)
+                self.data['three_pi_half_time'] = 3 * RabiT / 4 - phaseoffs * RabiT / (2 * np.pi)
+                self.data['T2_star'] = fits[4]
+                self.data['rabi_freq'] = 1000 * fits[1] / (2 * np.pi)  # Rabi frequency in [MHz]
+
+            try:
+                current_rep_num = progress_handle.fetch_all()
+                # current_counts_vec = tracking_handle.fetch_all()
+            except Exception as e:
+                print('** ATTENTION **')
+                print(e)
+            else:
+                # Check if tracking is called
+                self.data['rep_num'] = float(current_rep_num)
+                # print(current_rep_num)
+                self.progress = current_rep_num * 100. / self.settings['rep_num']
+                self.updateProgress.emit(int(self.progress))
+
+            if self._abort:
+                self.qm.execute(job_stop)
+                break
+
+            time.sleep(0.8)
+
+        self.instruments['mw_gen_iq']['instance'].update({'enable_output': False})
+        self.instruments['mw_gen_iq']['instance'].update({'ext_trigger': False})
+        self.instruments['mw_gen_iq']['instance'].update({'enable_IQ': False})
+        print('Turned off RF generator SGS100A (IQ off, trigger off).')
+
+    def plot(self, figure_list):
+        super(RabiPlusMinus, self).plot([figure_list[0], figure_list[1]])
+
+    def _plot(self, axes_list, data=None, title=True):
+        """
+            Plots the confocal scan image
+            Args:
+                axes_list: list of axes objects on which to plot the galvo scan on the first axes object
+                data: data (dictionary that contains keys image_data, extent) if not provided use self.data
+        """
+        if data is None:
+            data = self.data
+
+        if 'analog' in data.keys() and 'digital' in data.keys():
+            plot_qmsimulation_samples(axes_list[1], data)
+
+        if 't_vec' in data.keys() and 'signal_avg_vec' in data.keys():
+            if 'fits' in data.keys():
+                try:
+                    pi_time = data['pi_time']
+                    pi_half_time = data['pi_half_time']
+                    three_pi_half_time = data['three_pi_half_time']
+                    fits = data['fits']
+                    phaseoffs = data['phaseoffs']
+
+                    axes_list[0].clear()
+                    axes_list[0].plot(data['t_vec'], data['signal_avg_vec'], '.-')
+                    axes_list[0].plot(data['t_vec'], cose_with_decay(data['t_vec'], *fits), lw=2)
+
+                    axes_list[0].plot(pi_time, cose_with_decay(pi_time, *fits), 'ro', lw=3)
+                    axes_list[0].annotate('$\pi$={:0.1f}ns'.format(pi_time), xy=(pi_time, cose_with_decay(pi_time, *fits)),
+                                          xytext=(pi_time + 10., cose_with_decay(pi_time, *fits)), xycoords='data')
+                    axes_list[0].plot(pi_half_time, cose_with_decay(pi_half_time, *fits), 'ro', lw=3)
+                    axes_list[0].annotate('$\pi/2$=\n{:0.1f}ns'.format(pi_half_time),
+                                          xy=(pi_half_time, cose_with_decay(pi_half_time, *fits)),
+                                          xytext=(pi_half_time + 10., cose_with_decay(pi_half_time, *fits)),
+                                          xycoords='data')
+                    axes_list[0].plot(three_pi_half_time, cose_with_decay(three_pi_half_time, *fits), 'ro', lw=3)
+                    axes_list[0].annotate('$3\pi/2$=\n{:0.1f}ns'.format(three_pi_half_time),
+                                          xy=(three_pi_half_time, cose_with_decay(three_pi_half_time, *fits)),
+                                          xytext=(three_pi_half_time + 10., cose_with_decay(three_pi_half_time, *fits)),
+                                          xycoords='data')
+                    axes_list[0].plot(-phaseoffs, cose_with_decay(-phaseoffs, *fits), 'gd', lw=3)
+                    axes_list[0].annotate('$start$={:0.1f}ns'.format(-phaseoffs),
+                                          xy=(-phaseoffs, cose_with_decay(-phaseoffs, *fits)),
+                                          xytext=(-phaseoffs + 10., cose_with_decay(-phaseoffs, *fits)), xycoords='data')
+                    if title:
+                        axes_list[0].set_title(
+                            'Rabi frequency: {:0.2f}MHz\npi-half time: {:2.1f}ns, pi-time: {:2.1f}ns, 3pi-half time: {:2.1f}ns \n T2*: {:2.1f}ns, Ref fluor: {:0.1f}kcps, Repetition number: {:d}\nRF power: {:0.1f}dBm, LO freq: {:0.4f}GHz, IF amp: {:0.1f}, pi-time: {:2.1f}ns, pi freq: {:s}\nesr1: {:0.2f}MHz, esr2: {:0.2f}MHz, subqubit amp: {:0.1f}'.format(
+                                data['rabi_freq'], pi_half_time, pi_time, three_pi_half_time, data['T2_star'],
+                                data['ref_cnts'], int(data['rep_num']), self.settings['mw_pulses']['mw_power'],
+                                self.settings['mw_pulses']['mw_frequency'] * 1e-9, self.settings['mw_pulses']['IF_amp'],
+                                self.settings['mw_pulses']['pi_pulse_time'],
+                                self.settings['mw_pulses']['pi_frequency'],self.settings['mw_pulses']['esr1'] * 1e-6,
+                                self.settings['mw_pulses']['esr2'] * 1e-6, self.settings['mw_pulses']['subqubit_IF_amp']))
+                    axes_list[0].set_xlabel('Rabi tau [ns]')
+                    axes_list[0].set_ylabel('Contrast')
+
+                except Exception as e:
+                    print('** ATTENTION **')
+                    print(e)
+
+            else:
+                try:
+                    axes_list[0].clear()
+                    axes_list[0].plot(data['t_vec'], data['signal_avg_vec'])
+                    axes_list[0].set_xlabel('Rabi tau [ns]')
+                    axes_list[0].set_ylabel('Contrast')
+                    if title:
+                        axes_list[0].set_title(
+                            'Rabi\nRef fluor: {:0.1f}kcps, Repetition number: {:d}\nRF power: {:0.1f}dBm, LO freq: {:0.4f}GHz, IF amp: {:0.1f}, pi-time: {:2.1f}ns, pi freq: {:s}\nesr1: {:0.2f}MHz, esr2: {:0.2f}MHz, subqubit amp: {:0.1f}'.format(
+                                data['ref_cnts'], int(data['rep_num']),
+                                self.settings['mw_pulses']['mw_power'], self.settings['mw_pulses']['mw_frequency'] * 1e-9,
+                                self.settings['mw_pulses']['IF_amp'], self.settings['mw_pulses']['pi_pulse_time'],
+                                self.settings['mw_pulses']['pi_frequency'], self.settings['mw_pulses']['esr1'] * 1e-6,
+                                self.settings['mw_pulses']['esr2'] * 1e-6, self.settings['mw_pulses']['subqubit_IF_amp'],
+                            ),
+                        )
+
+                except Exception as e:
+                    print('** ATTENTION **')
+                    print(e)
+
+    def _update_plot(self, axes_list, title=True):
+        self._plot(axes_list, title=title)
+
+    def get_axes_layout(self, figure_list):
+        """
+            returns the axes objects the script needs to plot its data
+            this overwrites the default get_axis_layout in PyLabControl.src.core.scripts
+            Args:
+                figure_list: a list of figure objects
+            Returns:
+                axes_list: a list of axes objects
+
+        """
+        axes_list = []
+        if self._plot_refresh is True:
+            for fig in figure_list:
+                fig.clf()
+            axes_list.append(figure_list[0].add_subplot(111))  # axes_list[0]
+            axes_list.append(figure_list[1].add_subplot(111))  # axes_list[1]
+        else:
+            axes_list.append(figure_list[0].axes[0])
+            axes_list.append(figure_list[1].axes[0])
+        return axes_list
+
+
 class PowerRabi(Script):
     """
         This script applies a microwave pulse at varying amplitudes for fixed tau to measure Rabi oscillations.

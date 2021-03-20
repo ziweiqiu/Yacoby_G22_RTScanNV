@@ -373,7 +373,14 @@ class MagnetSweep1D(Script):
                 self.data['pdd_tau'] = self.scripts['pdd'].data['t_vec']
 
             if index >= 0:
-                self.data['pdd'][index] = self.scripts['pdd'].data['signal_norm']
+                try:
+                    self.data['pdd'][index] = self.scripts['pdd'].data['signal_norm']
+                except Exception as e:
+                    print('** ATTENTION **')
+                    print(e)
+
+                    length = np.min([len(self.data['pdd'][index]), len(self.scripts['pdd'].data['signal_norm'])])
+                    self.data['pdd'][index][0:length] = self.scripts['pdd'].data['signal_norm'][0:length]
 
     def _function(self):
         self.settings['exp_to_do']['backward_sweep'] = False # Not spported for now ZQ1/3/2021

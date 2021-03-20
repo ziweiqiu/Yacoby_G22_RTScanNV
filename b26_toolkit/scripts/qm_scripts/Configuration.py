@@ -39,7 +39,7 @@ config = {
                 3: {'offset': 0.0},  # Current 1 for Berry's phase detection
                 4: {'offset': 0.0},  # Current 2 for Berry's phase detection
                 5: {'offset': 0.01},  # analog gate for ac sensing (offset is assuming 50ohm load)
-                # 6: {'offset': 0.0},  # galvo y
+                6: {'offset': 0.0},  # subqubit frequency
                 # 7: {'offset': 0.0},  # galvo z
                 # 10: {'offset': 0.0},  # AOM for charge probe laser
             },
@@ -76,6 +76,21 @@ config = {
             },
 
         },
+
+        'sub_qubit': {
+            "singleInput": {"port": ("con1", 6)},
+            'intermediate_frequency':0,
+            'operations': {
+                'const': 'subqubit_const_pulse',
+            },
+            'digitalInputs': {
+                            "  rf_switch": {
+                                "port": ("con1", 6),
+                                "delay": 35 * 4,
+                                "buffer": 0,
+                            },
+
+        },},
 
         'laser': {
             'digitalInputs': {
@@ -321,6 +336,13 @@ config = {
             'length': 1600,
             'digital_marker': 'ON'
         },
+
+        'subqubit_const_pulse': {
+                            'operation': "control",
+                            'length': 120,
+                            'waveforms': {'single':"const_wf"},
+                            'digital_marker': 'ON'
+                        },
 
         'gate_pulse1': {
                         'operation': "control",

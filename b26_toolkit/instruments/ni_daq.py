@@ -43,6 +43,7 @@ uInt64 = ctypes.c_ulonglong
 float64 = ctypes.c_double
 bool32 = ctypes.c_bool
 TaskHandle = uInt64
+
 # Analog constants
 DAQmx_Val_Cfg_Default = int32(-1)
 DAQmx_Val_Volts = 10348

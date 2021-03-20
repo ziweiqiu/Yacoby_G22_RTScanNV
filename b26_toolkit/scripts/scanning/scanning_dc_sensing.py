@@ -1,4 +1,6 @@
 import numpy as np
+import time
+import math
 
 from pylabcontrol.core import Script, Parameter
 from b26_toolkit.scripts.set_laser import SetScannerXY_gentle
@@ -8,9 +10,10 @@ from b26_toolkit.scripts.qm_scripts.afm_sync_sensing import PDDSyncAFM
 from b26_toolkit.scripts.optimize import optimize
 from b26_toolkit.instruments import NI6733, NI6220, NI6210, SGS100ARFSource, Agilent33120A, YokogawaGS200
 
+
 class ScanningDCSensing(Script):
     """
-        Perform AC sensing measurements (based on PDDSyncAFM) and scan along a 1D line.
+        Perform DC sensing measurements (based on PDDSyncAFM) and scan along a 1D line.
         One can also choose to do Rabi and fluorescence optimize every several points.
         - Ziwei Qiu 2/19/2020
     """
@@ -135,7 +138,7 @@ class ScanningDCSensing(Script):
 
             if np.abs(pos_after[0] - pos_before[0]) > self.settings['do_optimize']['range_xy'] or np.abs(
                     pos_after[1] - pos_before[1]) > self.settings['do_optimize']['range_xy'] or np.abs(
-                    pos_after[2] - pos_before[2]) > self.settings['do_optimize']['range_z']:
+                pos_after[2] - pos_before[2]) > self.settings['do_optimize']['range_z']:
                 self.daq_out.set_analog_voltages({self.settings['DAQ_channels']['x_ao_channel']: pos_before[0]})
                 self.daq_out.set_analog_voltages({self.settings['DAQ_channels']['y_ao_channel']: pos_before[1]})
                 self.daq_out.set_analog_voltages({self.settings['DAQ_channels']['z_ao_channel']: pos_before[2]})
@@ -236,7 +239,7 @@ class ScanningDCSensing(Script):
         self.scripts['afm1d_before_after'].settings['point_b']['y'] = self.settings['point_b']['y']
         self.scripts['afm1d_before_after'].run()
 
-    def do_afm1d_after(self, verbose = True):
+    def do_afm1d_after(self, verbose=True):
         if verbose:
             print('===> AFM1D starts after the sensing experiments.')
         self.scripts['afm1d_before_after'].settings['tag'] = 'afm1d_after'
@@ -268,21 +271,43 @@ class ScanningDCSensing(Script):
             self.vol_source = None
 
     def set_voltage(self, vol):
+        steps = np.linspace(0, 1, 21)
         if self.settings['dc_voltage']['source'] == 'afg':
+            print('Ramping up the voltage on AFG...')
+            for step in steps:
+                self.vol_source.update({'offset': float(vol * step)})
+                time.sleep(0.5)
             self.vol_source.update({'offset': vol})
+            print('Voltage is set on AFG.')
         elif self.settings['dc_voltage']['source'] == 'yokogawa':
+            print('Ramping up the voltage on Yokogawa...')
+            for step in steps:
+                self.vol_source.update({'level': float(vol * step)})
+                time.sleep(0.5)
             self.vol_source.update({'level': vol})
-        elif self.settings['dc_voltage']['source'] == 'keithley':
-            pass
+            print('Voltage is set on Yokogawa.')
+        # elif self.settings['dc_voltage']['source'] == 'keithley':
+        #     pass
 
-    def close_voltage_source(self):
+    def close_voltage_source(self, vol):
+        steps = np.linspace(1, 0, 21)
         if self.settings['dc_voltage']['source'] == 'afg':
+            print('Ramping down the voltage on AFG...')
+            for step in steps:
+                self.vol_source.update({'offset': float(vol * step)})
+                time.sleep(0.5)
             self.vol_source.update({'offset': 0.0})
+            print('Voltage is 0 on AFG.')
         elif self.settings['dc_voltage']['source'] == 'yokogawa':
+            print('Ramping down the voltage on Yokogawa...')
+            for step in steps:
+                self.vol_source.update({'level': float(vol * step)})
+                time.sleep(0.5)
             self.vol_source.update({'level': 0.0})
+            print('Voltage is 0 on Yokogawa.')
             self.vol_source.update({'enable_output': False})
-        elif self.settings['dc_voltage']['source'] == 'keithley':
-            pass
+        # elif self.settings['dc_voltage']['source'] == 'keithley':
+        #     pass
 
     def _function(self):
         self.set_up_voltage_source()
@@ -350,7 +375,7 @@ class ScanningDCSensing(Script):
                 print(e)
 
             try:
-                dc_sig, norm_sig, exact_tau, coherence, phase = self.do_dc_sensing(index=i+1)
+                dc_sig, norm_sig, exact_tau, coherence, phase = self.do_dc_sensing(index=i + 1)
                 self.data['dc_data'] = np.concatenate((self.data['dc_data'], dc_sig), axis=0)
                 self.data['norm_data'] = np.concatenate((self.data['norm_data'], norm_sig), axis=0)
                 self.data['exact_tau'] = np.concatenate((self.data['exact_tau'], exact_tau))
@@ -364,7 +389,7 @@ class ScanningDCSensing(Script):
         if self.settings['do_afm1d']['after'] and not self._abort:
             self.do_afm1d_after()
 
-        self.close_voltage_source()
+        self.close_voltage_source(float(self.settings['dc_voltage']['level']))
 
     def _plot(self, axes_list, data=None):
 
@@ -394,16 +419,16 @@ class ScanningDCSensing(Script):
                 axes_list[2].plot(data['dc_dist_array'], data['coherence'], '--', label="coherence")
                 axes_list[2].axhline(y=0.0, color='r', ls='--', lw=1.3)
                 axes_list[7].plot(data['dc_dist_array'], data['phase'])
-                axes_list[7].axhline(y=3.14159, color='r', ls='--', lw=1.1)
-                axes_list[7].axhline(y=-3.14159, color='r', ls='--', lw=1.1)
+                # axes_list[7].axhline(y=3.14159, color='r', ls='--', lw=1.1)
+                # axes_list[7].axhline(y=-3.14159, color='r', ls='--', lw=1.1)
             else:
                 axes_list[2].plot(np.zeros([10]), np.zeros([10]), label="norm sig1")
                 axes_list[2].plot(np.zeros([10]), np.zeros([10]), label="norm sig2")
                 axes_list[2].plot(np.zeros([10]), np.zeros([10]), '--', label="coherence")
                 axes_list[2].axhline(y=0.0, color='r', ls='--', lw=1.3)
                 axes_list[7].plot(np.zeros([10]), np.zeros([10]))
-                axes_list[7].axhline(y=3.14159, color='r', ls='--', lw=1.1)
-                axes_list[7].axhline(y=-3.14159, color='r', ls='--', lw=1.1)
+                # axes_list[7].axhline(y=3.14159, color='r', ls='--', lw=1.1)
+                # axes_list[7].axhline(y=-3.14159, color='r', ls='--', lw=1.1)
 
             if 'rabi_freq' in data.keys() and 'rabi_power' in data.keys() and 'rabi_dist_array' in data.keys():
                 axes_list[4].plot(data['rabi_dist_array'], data['rabi_freq'], label="freq")
@@ -427,31 +452,34 @@ class ScanningDCSensing(Script):
 
             axes_list[7].set_xlabel('Position [V]')
 
-            axes_list[2].legend(loc='upper right')
+            # axes_list[2].legend(loc='upper left')
             axes_list[4].legend(loc='upper left')
             axes_list[5].legend(loc='upper right')
 
-            dc_title = 'AFM-synced (freq: {:0.2f}kHz) PDD-based DC Sensing\nRF power: {:0.1f}dBm, LO freq: {:0.4f}GHz, IF amp: {:0.1f}, IF freq: {:0.2f}MHz\nπ/2 time: {:2.1f}ns, π time: {:2.1f}ns, 3π/2 time: {:2.1f}ns\n Repetition: {:d}, {:s} {:d} block(s)'.format(
+            dc_title = 'AFM freq={:0.2f}kHz, {:s} {:d} block(s), π/2={:2.1f}ns, π={:2.1f}ns, Repetition:{:d}\nRF power: {:0.1f}dBm, LO freq: {:0.4f}GHz, IF amp: {:0.1f}, IF freq: {:0.2f}MHz'.format(
                 self.scripts['trig_pdd'].settings['f_exc'],
+                self.scripts['trig_pdd'].settings['decoupling_seq']['type'],
+                self.scripts['trig_pdd'].settings['decoupling_seq']['num_of_pulse_blocks'],
+                self.scripts['trig_pdd'].settings['mw_pulses']['pi_half_pulse_time'],
+                self.scripts['trig_pdd'].settings['mw_pulses']['pi_pulse_time'],
+                self.scripts['trig_pdd'].settings['rep_num'],
                 self.scripts['trig_pdd'].settings['mw_pulses']['mw_power'],
                 self.scripts['trig_pdd'].settings['mw_pulses']['mw_frequency'] * 1e-9,
                 self.scripts['trig_pdd'].settings['mw_pulses']['IF_amp'],
-                self.scripts['trig_pdd'].settings['mw_pulses']['IF_frequency'] * 1e-6,
-                self.scripts['trig_pdd'].settings['mw_pulses']['pi_half_pulse_time'],
-                self.scripts['trig_pdd'].settings['mw_pulses']['pi_pulse_time'],
-                self.scripts['trig_pdd'].settings['mw_pulses']['3pi_half_pulse_time'],
-                self.scripts['trig_pdd'].settings['rep_num'],
-                self.scripts['trig_pdd'].settings['decoupling_seq']['type'],
-                self.scripts['trig_pdd'].settings['decoupling_seq']['num_of_pulse_blocks'])
+                self.scripts['trig_pdd'].settings['mw_pulses']['IF_frequency'] * 1e-6)
 
-            axes_list[0].set_title('1D DC Sensing: pta=({:0.3f}V, {:0.3f}V), ptb=({:0.3f}V, {:0.3f}V)\n'.format(
-                self.settings['point_a']['x'], self.settings['point_a']['y'],
-                self.settings['point_b']['x'], self.settings['point_b']['y']) + dc_title)
+            axes_list[0].set_title(
+                '1D DC Sensing: pta=({:0.3f}V, {:0.3f}V), ptb=({:0.3f}V, {:0.3f}V), {:0.2}Vdc\n'.format(
+                    self.settings['point_a']['x'], self.settings['point_a']['y'],
+                    self.settings['point_b']['x'], self.settings['point_b']['y'],
+                    self.settings['dc_voltage']['level']) + dc_title)
+
+            # axes_list[0].set_title('1D DC Sensing: pta=({:0.3f}V, {:0.3f}V), ptb=({:0.3f}V, {:0.3f}V)\n'.format(
+            #     self.settings['point_a']['x'], self.settings['point_a']['y'],
+            #     self.settings['point_b']['x'], self.settings['point_b']['y']))
         except Exception as e:
             print('** ATTENTION in _plot 1d **')
             print(e)
-
-
 
         if self._current_subscript_stage['current_subscript'] == self.scripts['trig_pdd']:
             self.scripts['trig_pdd']._plot([axes_list[3]], title=False)
@@ -474,7 +502,7 @@ class ScanningDCSensing(Script):
 
             elif self._current_subscript_stage['current_subscript'] == self.scripts['afm1d_before_after']:
                 self.scripts['afm1d_before_after']._update_plot([axes_list[3], axes_list[6]], title=False,
-                                                            monitor_AFM=False)
+                                                                monitor_AFM=False)
             else:
                 if 'afm_dist_array' in self.data.keys() and len(self.data['afm_dist_array']) > 0:
                     axes_list[0].lines[0].set_xdata(self.data['afm_dist_array'])
@@ -534,7 +562,333 @@ class ScanningDCSensing(Script):
             axes_list.append(figure_list[0].add_subplot(513))  # axes_list[2]
             axes_list.append(figure_list[1].add_subplot(121))  # axes_list[3]
             axes_list.append(figure_list[0].add_subplot(514))  # axes_list[4]
-            axes_list.append(axes_list[4].twinx())             # axes_list[5]
+            axes_list.append(axes_list[4].twinx())  # axes_list[5]
+            axes_list.append(figure_list[1].add_subplot(122))  # axes_list[6]
+            axes_list.append(figure_list[0].add_subplot(515))  # axes_list[7]
+
+        else:
+            axes_list.append(figure_list[0].axes[0])
+            axes_list.append(figure_list[0].axes[1])
+            axes_list.append(figure_list[0].axes[2])
+            axes_list.append(figure_list[1].axes[0])
+            axes_list.append(figure_list[0].axes[3])
+            axes_list.append(figure_list[0].axes[4])
+            axes_list.append(figure_list[1].axes[1])
+            axes_list.append(figure_list[0].axes[5])
+
+        return axes_list
+
+
+class ScanningDCSensing2D(Script):
+    """
+        Perform DC sensing measurements (based on PDDSyncAFM) and perform AFM scan in 2D.
+        One can also choose to do Rabi and fluorescence optimize every several points.
+        One needs to go to child subscripts to define the settings.
+        - Ziwei Qiu 2/22/2021
+    """
+    _DEFAULT_SETTINGS = [
+        Parameter('to_do', 'print_info', ['print_info', 'execution'],
+                  'choose to print information of the scanning settings or do real scanning'),
+        Parameter('scan_center',
+                  [Parameter('x', 0.5, float, 'x-coordinate [V]'),
+                   Parameter('y', 0.5, float, 'y-coordinate [V]')
+                   ]),
+        Parameter('scan_direction',
+                  [Parameter('pt1',
+                             [Parameter('x', 0.0, float, 'x-coordinate [V]'),
+                              Parameter('y', 0.0, float, 'y-coordinate [V]')
+                              ]),
+                   Parameter('pt2',
+                             [Parameter('x', 0.0, float, 'x-coordinate [V]'),
+                              Parameter('y', 1.0, float, 'y-coordinate [V]')
+                              ]),
+                   Parameter('type', 'parallel', ['perpendicular', 'parallel'],
+                             'scan direction perpendicular or parallel to the pt1pt2 line')
+                   ]),
+        Parameter('scan_size',
+                  [Parameter('axis1', 1.5, float, 'inner loop [V]'),
+                   Parameter('axis2', 1.5, float, 'outer loop [V]')
+                   ]),
+        Parameter('num_points',
+                  [Parameter('axis1', 60, int, 'number of points to scan in each line (inner loop)'),
+                   Parameter('axis2', 20, int, 'number of lines to scan (outer loop)'),
+                   ]),
+        Parameter('scan_speed', 0.04, [0.01, 0.02, 0.04, 0.06, 0.08, 0.1],
+                  '[V/s] scanning speed on average. suggest 0.04V/s, i.e. 200nm/s.'),
+        Parameter('dc_voltage', [
+            Parameter('level', 0.0, float, 'define the DC voltage [V] to infinity load'),
+            Parameter('source', 'None', ['afg', 'yokogawa', 'keithley', 'None'],
+                      'choose the voltage source. afg limit: +/-10V, yokogawa: +/-30V, keithley: not implemented. If None, then no voltage source is connected.')
+        ]),
+        Parameter('do_rabi',
+                  [Parameter('pta_power', -15, float, 'choose the MW power at pta, first point of first line'),
+                   Parameter('ptb_power', -15, float, 'choose the MW power at ptb, last point of first line'),
+                   Parameter('ptc_power', -15, float, 'choose the MW power at ptc, first point of last line'),
+                   Parameter('ptd_power', -15, float, 'choose the MW power at ptd, last point of last line'),
+                   ]),
+        # Parameter('monitor_AFM', False, bool,
+        #           'monitor the AFM Z_out voltage and retract the tip when the feedback loop is out of control'),
+        Parameter('DAQ_channels',
+                  [Parameter('x_ai_channel', 'ai5', ['ai5', 'ai6', 'ai7'], 'Daq channel used for measuring x voltage'),
+                   Parameter('y_ai_channel', 'ai6', ['ai5', 'ai6', 'ai7'], 'Daq channel used for measuring y voltage'),
+                   Parameter('z_ai_channel', 'ai7', ['ai5', 'ai6', 'ai7'], 'Daq channel used for measuring z voltage'),
+                   Parameter('z_usb_ai_channel', 'ai1', ['ai0', 'ai1', 'ai2', 'ai3'],
+                             'Daq channel used for measuring scanner z voltage')
+                   ])
+
+    ]
+    _INSTRUMENTS = {'NI6733': NI6733, 'NI6220': NI6220, 'NI6210': NI6210, 'afg': Agilent33120A,
+                    'yokogawa': YokogawaGS200}
+    _SCRIPTS = {'scandc1d': ScanningDCSensing, 'set_scanner': SetScannerXY_gentle}
+
+    def __init__(self, instruments=None, scripts=None, name=None, settings=None, log_function=None, data_path=None):
+        """
+        Example of a script that emits a QT signal for the gui
+        Args:
+            name (optional): name of script, if empty same as class name
+            settings (optional): settings for this script, if empty same as default settings
+        """
+        Script.__init__(self, name, settings=settings, instruments=instruments, scripts=scripts,
+                        log_function=log_function, data_path=data_path)
+        self.daq_in_usbAI = self.instruments['NI6210']['instance']
+
+    def _get_scan_extent(self, verbose=True):
+        """
+        Define 4 points and two unit vectors.
+        self.pta - first point to scan, self.ptb- last point of first line,
+        self.ptc - first point of last line, self.ptd - last point of last line
+        self.vector_x - scanning direction vector, self.vector_y - orthorgonl direction
+        """
+        pt1 = np.array([self.settings['scan_direction']['pt1']['x'], self.settings['scan_direction']['pt1']['y']])
+        pt2 = np.array([self.settings['scan_direction']['pt2']['x'], self.settings['scan_direction']['pt2']['y']])
+        if (pt1 == pt2)[0] == True and (pt1 == pt2)[1] == True:
+            print('**ATTENTION** pt1 and pt2 are the same. Please define a valid scan direction. No action.')
+            self._abort = True
+        vector_1to2 = self._to_unit_vector(pt1, pt2)
+
+        if self.settings['scan_direction']['type'] == 'parallel':
+            self.vector_x = vector_1to2
+            self.vector_y = self._get_ortho_vector(self.vector_x)
+        else:
+            self.vector_y = vector_1to2
+            self.vector_x = self._get_ortho_vector(-self.vector_y)
+
+        self.rotation_angle = math.acos(np.dot(self.vector_x, np.array([1, 0]))) / np.pi * 180
+        if self.vector_x[1] > 0:
+            self.rotation_angle = -self.rotation_angle
+
+        if verbose:
+            print('Scanning details:')
+            print('     vector_x (inner loop):', self.vector_x)
+            print('     vector_y (outer loop):', self.vector_y)
+            print('     rotation_angle:', self.rotation_angle)
+
+        self.scan_center = np.array([self.settings['scan_center']['x'], self.settings['scan_center']['y']])
+        scan_size_1 = self.settings['scan_size']['axis1']  # inner loop
+        scan_size_2 = self.settings['scan_size']['axis2']  # outer loop
+
+        # define the 4 points
+        self.pta = self.scan_center - self.vector_x * scan_size_1 / 2. - self.vector_y * scan_size_2 / 2.
+        self.ptb = self.scan_center + self.vector_x * scan_size_1 / 2. - self.vector_y * scan_size_2 / 2.
+        self.ptc = self.scan_center - self.vector_x * scan_size_1 / 2. + self.vector_y * scan_size_2 / 2.
+        self.ptd = self.scan_center + self.vector_x * scan_size_1 / 2. + self.vector_y * scan_size_2 / 2.
+
+        if verbose:
+            print('     self.pta (first point of first line):', self.pta)
+            print('     self.ptb (last point of first line):', self.ptb)
+            print('     self.ptc (first point of last line):', self.ptc)
+            print('     self.ptd (last point of last line):', self.ptd)
+
+    def _to_unit_vector(self, pt1, pt2):
+        unit_vector = (pt2 - pt1) / np.linalg.norm(pt2 - pt1)
+        return unit_vector
+
+    def _get_ortho_vector(self, vector):
+        ortho_vector = np.array([-vector[1], vector[0]])
+        return ortho_vector
+
+    def _get_scan_array(self):
+        self._get_scan_extent()
+        self.scan_pos_1d_ac = np.linspace(self.pta, self.ptc, self.settings['num_points']['axis2'], endpoint=True)
+        self.scan_pos_1d_bd = np.linspace(self.ptb, self.ptd, self.settings['num_points']['axis2'], endpoint=True)
+        self.start_power_ac = np.linspace(self.settings['do_rabi']['pta_power'], self.settings['do_rabi']['ptc_power'],
+                                          self.settings['num_points']['axis2'], endpoint=True)
+        self.end_power_bd = np.linspace(self.settings['do_rabi']['ptb_power'], self.settings['do_rabi']['ptd_power'],
+                                        self.settings['num_points']['axis2'], endpoint=True)
+
+    def set_up_voltage_source(self):
+        if self.settings['dc_voltage']['source'] == 'afg':
+            self.vol_source = self.instruments['afg']['instance']
+            self.vol_source.update({'output_load': 'INFinity'})
+            self.vol_source.update({'wave_shape': 'DC'})
+            self.vol_source.update({'burst_mod': False})
+        elif self.settings['dc_voltage']['source'] == 'yokogawa':
+            self.vol_source = self.instruments['yokogawa']['instance']
+            self.vol_source.update({'source': 'VOLT'})
+            self.vol_source.update({'level': 0.0})
+            self.vol_source.update({'enable_output': True})
+        elif self.settings['dc_voltage']['source'] == 'keithley':
+            self.vol_source = None
+        else:
+            self.vol_source = None
+
+    def set_voltage(self, vol):
+        steps = np.linspace(0, 1, 21)
+        if self.settings['dc_voltage']['source'] == 'afg':
+            print('Ramping up the voltage on AFG...')
+            for step in steps:
+                self.vol_source.update({'offset': float(vol * step)})
+                time.sleep(0.5)
+            self.vol_source.update({'offset': vol})
+            print('Voltage is set on AFG.')
+        elif self.settings['dc_voltage']['source'] == 'yokogawa':
+            print('Ramping up the voltage on Yokogawa...')
+            for step in steps:
+                self.vol_source.update({'level': float(vol * step)})
+                time.sleep(0.5)
+            self.vol_source.update({'level': vol})
+            print('Voltage is set on Yokogawa.')
+        # elif self.settings['dc_voltage']['source'] == 'keithley':
+        #     pass
+
+    def close_voltage_source(self, vol):
+        steps = np.linspace(1, 0, 21)
+        if self.settings['dc_voltage']['source'] == 'afg':
+            print('Ramping down the voltage on AFG...')
+            for step in steps:
+                self.vol_source.update({'offset': float(vol * step)})
+                time.sleep(0.5)
+            self.vol_source.update({'offset': 0.0})
+            print('Voltage is 0 on AFG.')
+        elif self.settings['dc_voltage']['source'] == 'yokogawa':
+            print('Ramping down the voltage on Yokogawa...')
+            for step in steps:
+                self.vol_source.update({'level': float(vol * step)})
+                time.sleep(0.5)
+            self.vol_source.update({'level': 0.0})
+            print('Voltage is 0 on Yokogawa.')
+            self.vol_source.update({'enable_output': False})
+        # elif self.settings['dc_voltage']['source'] == 'keithley':
+        #     pass
+
+
+    def _function(self):
+
+        self.scripts['scandc1d'].settings['dc_voltage']['source'] = 'None'
+        self._get_scan_array()
+
+        if self.settings['to_do'] == 'print_info':
+            print('No scanning started.')
+
+        elif np.max([self.pta, self.ptb, self.ptc, self.ptd]) <= 8 and np.min(
+                [self.pta, self.ptb, self.ptc, self.ptd]) >= 0:
+            self.set_up_voltage_source()
+            self.set_voltage(float(self.settings['dc_voltage']['level']))
+
+            # Move to the initial scanning position
+            self.scripts['set_scanner'].update({'to_do': 'set'})
+            self.scripts['set_scanner'].update({'scan_speed': self.settings['scan_speed']})
+            self.scripts['set_scanner'].update({'step_size': 0.0001})
+
+            self.data = {'scan_center': self.scan_center, 'scan_size_1': self.settings['scan_size']['axis1'],
+                         'scan_size_2': self.settings['scan_size']['axis2'], 'vector_x': self.vector_x,
+                         'extent': np.array([self.pta, self.ptb, self.ptc, self.ptd])}
+
+            print('*********************************')
+            print('********* 2D Scan Starts ********')
+            print('*********************************')
+
+            for i in range(self.settings['num_points']['axis2']):
+                if self._abort:
+                    break
+                print('---------------------------------')
+                print('----- Line index {:d} out of {:d} ----'.format(i, self.settings['num_points']['axis2']))
+                print('---------------------------------')
+
+                self.scripts['set_scanner'].settings['point']['x'] = self.scan_pos_1d_ac[i][0]
+                self.scripts['set_scanner'].settings['point']['y'] = self.scan_pos_1d_ac[i][1]
+                self.scripts['set_scanner'].run()
+
+                try:
+                    self.flag_1d_plot = True
+                    self.scripts['scandc1d'].settings['tag'] = 'sensing1d_ind' + str(i)
+                    # self.scripts['scandc1d'].settings['monitor_AFM'] = False
+                    self.scripts['scandc1d'].settings['scan_speed'] = self.settings['scan_speed']
+                    self.scripts['scandc1d'].settings['point_a']['x'] = self.scan_pos_1d_ac[i][0]
+                    self.scripts['scandc1d'].settings['point_a']['y'] = self.scan_pos_1d_ac[i][1]
+                    self.scripts['scandc1d'].settings['point_b']['x'] = self.scan_pos_1d_bd[i][0]
+                    self.scripts['scandc1d'].settings['point_b']['y'] = self.scan_pos_1d_bd[i][1]
+                    self.scripts['scandc1d'].settings['num_points'] = self.settings['num_points']['axis1']
+                    # we always need to scan back in each line
+                    self.scripts['scandc1d'].settings['do_afm1d']['after'] = True
+                    self.scripts['scandc1d'].settings['do_rabi']['start_power'] = float(
+                        self.start_power_ac[i])
+                    self.scripts['scandc1d'].settings['do_rabi']['end_power'] = float(self.end_power_bd[i])
+                    self.scripts['scandc1d'].run()
+
+                    norm_sig1 = self.scripts['scandc1d'].data['norm_data'][:, 0]
+                    norm_sig2 = self.scripts['scandc1d'].data['norm_data'][:, 1]
+
+                    if 'norm_sig1_data' in self.data.keys():
+                        self.data['norm_sig1_data'] = np.concatenate((self.data['norm_sig1_data'], norm_sig1), axis=0)
+                    else:
+                        self.data['norm_sig1_data'] = norm_sig1
+                    if 'norm_sig2_data' in self.data.keys():
+                        self.data['norm_sig2_data'] = np.concatenate((self.data['norm_sig2_data'], norm_sig2), axis=0)
+                    else:
+                        self.data['norm_sig2_data'] = norm_sig2
+
+                    exact_tau = self.scripts['scandc1d'].data['exact_tau']
+                    if 'exact_tau' in self.data.keys():
+                        self.data['exact_tau'] = np.concatenate((self.data['exact_tau'], exact_tau), axis=0)
+                    else:
+                        self.data['exact_tau'] = exact_tau
+
+                    phase = self.scripts['scandc1d'].data['phase']
+                    if 'phase' in self.data.keys():
+                        self.data['phase'] = np.concatenate((self.data['phase'], phase), axis=0)
+                    else:
+                        self.data['phase'] = phase
+
+                except Exception as e:
+                    print('** ATTENTION in scanning_dcsensing_1d **')
+                    print(e)
+
+            self.close_voltage_source(float(self.settings['dc_voltage']['level']))
+
+    def _plot(self, axes_list, data=None):
+
+        if self._current_subscript_stage['current_subscript'] == self.scripts['scandc1d']:
+            self.scripts['scandc1d']._plot(axes_list)
+
+    def _update_plot(self, axes_list):
+        if self._current_subscript_stage['current_subscript'] == self.scripts['scandc1d']:
+
+            if self.flag_1d_plot:
+                self.scripts['scandc1d']._plot(axes_list)
+                self.flag_1d_plot = False
+            else:
+                self.scripts['scandc1d']._update_plot(axes_list)
+
+    def get_axes_layout(self, figure_list):
+        """
+            returns the axes objects the script needs to plot its data
+            this overwrites the default get_axis_layout in PyLabControl.src.core.scripts
+            Args:
+                figure_list: a list of figure objects
+            Returns:
+                axes_list: a list of axes objects
+        """
+        axes_list = []
+        if self._plot_refresh is True:
+            for fig in figure_list:
+                fig.clf()
+            axes_list.append(figure_list[0].add_subplot(511))  # axes_list[0]
+            axes_list.append(figure_list[0].add_subplot(512))  # axes_list[1]
+            axes_list.append(figure_list[0].add_subplot(513))  # axes_list[2]
+            axes_list.append(figure_list[1].add_subplot(121))  # axes_list[3]
+            axes_list.append(figure_list[0].add_subplot(514))  # axes_list[4]
+            axes_list.append(axes_list[4].twinx())  # axes_list[5]
             axes_list.append(figure_list[1].add_subplot(122))  # axes_list[6]
             axes_list.append(figure_list[0].add_subplot(515))  # axes_list[7]
 

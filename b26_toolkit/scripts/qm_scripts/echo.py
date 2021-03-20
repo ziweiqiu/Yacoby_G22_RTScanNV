@@ -1399,6 +1399,8 @@ class PDDSingleTau(Script):
                         self.settings['mw_pulses']['mw_frequency'] * 1e-9,
                         self.settings['mw_pulses']['IF_amp'],
                         self.settings['mw_pulses']['IF_frequency'] * 1e-6))
+            else:
+                axes_list[0].set_title('{:0.1f}kcps'.format(data['ref_cnts']))
 
     def _update_plot(self, axes_list, title=True):
         if self._current_subscript_stage['current_subscript'] is self.scripts['optimize'] and self.scripts[
@@ -2869,6 +2871,9 @@ class AC_DGate_SingleTau(Script):
                             self.settings['mw_pulses']['mw_frequency'] * 1e-9,
                             self.settings['mw_pulses']['IF_amp'],
                             self.settings['mw_pulses']['IF_frequency'] * 1e-6))
+                else:
+                    axes_list[0].set_title('{:0.1f}kcps'.format(data['ref_cnts']))
+
             except Exception as e:
                 print('** ATTENTION **')
                 print(e)
@@ -4208,6 +4213,9 @@ class AC_AGate_SingleTau(Script):
                             self.settings['mw_pulses']['mw_frequency'] * 1e-9,
                             self.settings['mw_pulses']['IF_amp'],
                             self.settings['mw_pulses']['IF_frequency'] * 1e-6))
+                else:
+                    axes_list[0].set_title('{:0.1f}kcps'.format(data['ref_cnts']))
+                    
             except Exception as e:
                 print('** ATTENTION **')
                 print(e)

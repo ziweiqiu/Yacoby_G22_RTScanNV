@@ -16,11 +16,11 @@
     along with b26_toolkit.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from .qm_scripts.basic import TimeTraceQMsim, RabiQM, PowerRabi, ESRQM, ESRQM_FitGuaranteed, LaserControl
+from .qm_scripts.basic import TimeTraceQMsim, RabiQM, RabiPlusMinus, PowerRabi, ESRQM, ESRQM_FitGuaranteed, LaserControl
 from .qm_scripts.calibration import DelayReadoutMeas, IQCalibration
 from .qm_scripts.echo import EchoQM, PDDQM, PDDSingleTau, ACSensingDigitalGate, AC_DGate_SingleTau, ACSensingAnalogGate, \
     AC_AGate_SingleTau, ACSensingSweepGate
-from .qm_scripts.afm_sync_sensing import EchoSyncAFM, PDDSyncAFM, DCSensingSyncAFM, DCSensingPDDSyncAFM
+from .qm_scripts.afm_sync_sensing import EchoSyncAFM, PDDSyncAFM, PDDSyncAFMDelayMeas, DCSensingSyncAFM, DCSensingPDDSyncAFM
 from .scanning.scanning_rabi import ScanningRabi
 from .scanning.scanning_ac_sensing import ScanningACSensing, ScanningACSensing2D
 from .scanning.scanning_dc_sensing import ScanningDCSensing

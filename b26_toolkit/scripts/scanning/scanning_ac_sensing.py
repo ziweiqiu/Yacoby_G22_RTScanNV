@@ -201,7 +201,7 @@ class ScanningACSensingV0(Script):
         axes_list[1].set_ylabel('Z_out [V]')
         axes_list[2].set_ylabel('Contrast')
         axes_list[2].set_xlabel('Position [V]')
-        axes_list[2].legend(loc='upper right')
+        # axes_list[2].legend(loc='upper right')
 
         if self.settings['gate_type'] == 'analog':
             ac_title = "analog gate, type: {:s}, {:s} {:d} block(s), {:d} repetitions\ngate1: {:0.3f}V, gate2: {:0.3f}V, offset: {:0.3f}V".format(
@@ -745,16 +745,16 @@ Attention! AFM just failed BUT the tip CANNOT be retracted. Please take action!"
                 axes_list[2].plot(data['ac_dist_array'], data['coherence'],'--', label="coherence")
                 axes_list[2].axhline(y=0.0, color='r', ls='--', lw=1.3)
                 axes_list[7].plot(data['ac_dist_array'], data['phase'])
-                axes_list[7].axhline(y=3.14159, color='r', ls='--', lw=1.1)
-                axes_list[7].axhline(y=-3.14159, color='r', ls='--', lw=1.1)
+                # axes_list[7].axhline(y=3.14159, color='r', ls='--', lw=1.1)
+                # axes_list[7].axhline(y=-3.14159, color='r', ls='--', lw=1.1)
             else:
                 axes_list[2].plot(np.zeros([10]), np.zeros([10]), label="norm sig1")
                 axes_list[2].plot(np.zeros([10]), np.zeros([10]), label="norm sig2")
                 axes_list[2].plot(np.zeros([10]), np.zeros([10]), '--', label="coherence")
                 axes_list[2].axhline(y=0.0, color='r', ls='--', lw=1.3)
                 axes_list[7].plot(np.zeros([10]), np.zeros([10]))
-                axes_list[7].axhline(y=3.14159, color='r', ls='--', lw=1.1)
-                axes_list[7].axhline(y=-3.14159, color='r', ls='--', lw=1.1)
+                # axes_list[7].axhline(y=3.14159, color='r', ls='--', lw=1.1)
+                # axes_list[7].axhline(y=-3.14159, color='r', ls='--', lw=1.1)
 
             if 'rabi_freq' in data.keys() and 'rabi_power' in data.keys() and 'rabi_dist_array' in data.keys():
                 axes_list[4].plot(data['rabi_dist_array'], data['rabi_freq'], label="freq")
@@ -787,7 +787,7 @@ Attention! AFM just failed BUT the tip CANNOT be retracted. Please take action!"
 
         axes_list[7].set_xlabel('Position [V]')
 
-        axes_list[2].legend(loc='upper right')
+        # axes_list[2].legend(loc='upper right')
         axes_list[4].legend(loc='upper left')
         axes_list[5].legend(loc='upper right')
 

@@ -12,6 +12,8 @@ from b26_toolkit.instruments import SGS100ARFSource
 from b26_toolkit.scripts.qm_scripts.Configuration import config
 from b26_toolkit.scripts.optimize import OptimizeNoLaser, optimize
 
+gate_wait = 55 # the delay between the RF pulses and electric fields in ns
+
 class RamseyLockInOPX(Script):
     """
         This script measures a time series of Ramsey signals synchronized with a external slowly oscillating electric field.
@@ -662,7 +664,7 @@ class PDDLockInSweepGate(Script):
 
                                     align('qubit', 'gate')
 
-                                    wait(round(pi2_time/2), 'gate')  # gate off
+                                    wait(round(pi2_time/2 + gate_wait/4), 'gate')  # gate off
                                     frame_rotation(p*np.pi, 'gate') # it seems using qua variable phi will cause incorrect phase...
                                     play('gate1' * amp(g1), 'gate')
 
@@ -678,7 +680,7 @@ class PDDLockInSweepGate(Script):
 
                                     align('qubit', 'gate')
 
-                                    wait(round(pi2_time / 2), 'gate')  # gate off
+                                    wait(round(pi2_time / 2+ gate_wait/4), 'gate')  # gate off
                                     frame_rotation(p*np.pi, 'gate')
                                     play('gate1' * amp(g1), 'gate')
 
@@ -695,7 +697,7 @@ class PDDLockInSweepGate(Script):
 
                                     align('qubit', 'gate')
 
-                                    wait(round(pi2_time / 2), 'gate')  # gate off
+                                    wait(round(pi2_time / 2+ gate_wait/4), 'gate')  # gate off
                                     frame_rotation(p*np.pi, 'gate')
                                     play('gate1' * amp(g1), 'gate')
 
@@ -712,7 +714,7 @@ class PDDLockInSweepGate(Script):
 
                                     align('qubit', 'gate')
 
-                                    wait(round(pi2_time / 2), 'gate')  # gate off
+                                    wait(round(pi2_time / 2+ gate_wait/4), 'gate')  # gate off
                                     frame_rotation(p*np.pi, 'gate')
                                     play('gate1' * amp(g1), 'gate')
 
@@ -1162,7 +1164,7 @@ class PDDLockInFixedGate(Script):
                                 reset_phase('gate')
                                 reset_frame('gate', 'qubit')
 
-                                wait(round(pi2_time / 2), 'gate')  # gate off
+                                wait(round(pi2_time / 2 + gate_wait/4), 'gate')  # gate off
                                 frame_rotation(p * np.pi,
                                                'gate')  # it seems using qua variable phi will cause incorrect phase...
                                 play('gate1', 'gate')
@@ -1178,7 +1180,7 @@ class PDDLockInFixedGate(Script):
                                 reset_phase('gate')
                                 reset_frame('gate', 'qubit')
 
-                                wait(round(pi2_time / 2), 'gate')  # gate off
+                                wait(round(pi2_time / 2 + gate_wait/4), 'gate')  # gate off
                                 frame_rotation(p * np.pi, 'gate')
                                 play('gate1', 'gate')
 
@@ -1194,7 +1196,7 @@ class PDDLockInFixedGate(Script):
                                 reset_phase('gate')
                                 reset_frame('gate', 'qubit')
 
-                                wait(round(pi2_time / 2), 'gate')  # gate off
+                                wait(round(pi2_time / 2 + gate_wait/4), 'gate')  # gate off
                                 frame_rotation(p * np.pi, 'gate')
                                 play('gate1', 'gate')
 
@@ -1210,7 +1212,7 @@ class PDDLockInFixedGate(Script):
                                 reset_phase('gate')
                                 reset_frame('gate', 'qubit')
 
-                                wait(round(pi2_time / 2), 'gate')  # gate off
+                                wait(round(pi2_time / 2 + gate_wait/4), 'gate')  # gate off
                                 frame_rotation(p * np.pi, 'gate')
                                 play('gate1', 'gate')
 

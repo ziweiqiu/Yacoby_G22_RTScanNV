@@ -650,14 +650,14 @@ def plot_counts_vs_pos_multilines(axis, data, pos, x_label=None, y_label=None, t
 
 
 def plot_qmsimulation_samples(axis, data):
-    channels = {'A1': 'I', 'A2': 'Q','A3': 'qe1','A4': 'qe2', 'A5': 'gate', 'D1': 'laser', 'D2': 'APD', 'D3': 'switch', 'D4': 'd_gate1', 'D5': 'd_gate2'}
+    channels = {'A1': 'I', 'A2': 'Q','A3': 'qe1','A4': 'qe2', 'A5': 'gate', 'A6': 'subqubit','D1': 'laser', 'D2': 'APD', 'D3': 'switch', 'D4': 'd_gate1', 'D5': 'd_gate2'}
 
     axis.clear()
     for analog_key in list(data['analog'].keys()):
         # In reality, analog pulses usually arrive 35*4ns later than the digital pulses.
         axis.plot([0] * 140+ data['analog'][analog_key].tolist(), label='A' + analog_key + ':' + channels['A' + analog_key], lw=1)
     for digital_key in list(data['digital'].keys()):
-        if digital_key not in ['3']: # no need to plot the RF switch
+        if digital_key not in ['3', '6']: # no need to plot the RF switch
             axis.plot(data['digital'][digital_key], label='D' + digital_key + ':' + channels['D' + digital_key], ls='--', lw=0.75)
     axis.set_xlabel('Time [ns]')
     axis.set_ylabel('Signal [V]')
