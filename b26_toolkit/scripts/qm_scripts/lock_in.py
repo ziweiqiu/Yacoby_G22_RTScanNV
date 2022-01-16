@@ -11,6 +11,7 @@ from b26_toolkit.plotting.plots_1d import plot_qmsimulation_samples
 from b26_toolkit.instruments import SGS100ARFSource
 from b26_toolkit.scripts.qm_scripts.Configuration import config
 from b26_toolkit.scripts.optimize import OptimizeNoLaser, optimize
+from b26_toolkit.data_processing.fit_functions import fit_sine_amplitude, sine
 
 gate_wait = 55 # the delay between the RF pulses and electric fields in ns
 
@@ -41,8 +42,9 @@ class RamseyLockInOPX(Script):
             Parameter('pi_half_pulse_time', 50, float, 'time duration of a pi/2 pulse (in ns)'),
         ]),
         Parameter('tau', 800, int, 'time between the two pi/2 pulses (in ns)'),
-        Parameter('ramsey_pts', 20, int,
-                  'number of measurement points. if -1, then ramsey_pts will be automatically determined by the signal period'),
+        Parameter('ramsey_pts', 30, int,
+                  'number of measurement points. if -1, then ramsey_pts will be automatically determined by the signal period. Each point is approximately 4us'),
+        Parameter('fit', False, bool, 'fit the data in real time'),
         Parameter('read_out', [
             Parameter('meas_len', 180, int, 'measurement time in ns'),
             Parameter('nv_reset_time', 2000, int, 'laser on time in ns'),
@@ -306,6 +308,19 @@ class RamseyLockInOPX(Script):
                     print('** ATTENTION in vec_handle **')
                     print(e)
 
+                # do fitting
+                if self.settings['fit']:
+                    try:
+                        us_per_pt = 4
+                        first_pt_us = 4
+                        A_fit, A_fit_err, phi_fit, phi_fit_err, freq_fit, offset_fit = \
+                            fit_sine_amplitude(np.arange(self.ramsey_pts)*us_per_pt + first_pt_us, self.data['phase'])
+                    except Exception as e:
+                        print('** ATTENTION in fitting **')
+                        print(e)
+                    else:
+                        self.data['fits'] = np.array([A_fit, A_fit_err, phi_fit, phi_fit_err, freq_fit, offset_fit])
+
 
                 try:
                     current_rep_num = progress_handle.fetch_all()
@@ -369,6 +384,21 @@ class RamseyLockInOPX(Script):
             axes_list[1].clear()
             if data['phase'] is not None:
                 axes_list[1].plot(x_array, data['phase'])
+
+            if self.settings['fit'] and 'fits' in data.keys():
+                us_per_pt = 4
+                first_pt_us = 4
+                axes_list[1].plot(x_array, sine(x_array * us_per_pt + first_pt_us, data['fits'][0],
+                                                data['fits'][2] / 180 * np.pi, data['fits'][4] / 1000 * 2 * np.pi,
+                                                data['fits'][5]),
+                                  label='sinusoidal fit\n A={:.3f}+/-{:0.2f} rad\n phi={:0.1f}+/-{:0.1f} deg\n freq={:0.4f}kHz'.format(
+                                      data['fits'][0],
+                                      data['fits'][1],
+                                      data['fits'][2],
+                                      data['fits'][3],
+                                      data['fits'][4]))
+
+
             axes_list[1].set_xlabel('Time [a.u.]')
             axes_list[1].set_ylabel('Phase [rad]')
 

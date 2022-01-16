@@ -153,7 +153,8 @@ class EchoSyncAFM(Script):
 
                     with for_(n, 0, n < rep_num, n + 1):
                         with for_(k, 0, k < 4, k + 1):
-                            wait_for_trigger('qubit')
+                            if self.settings['to_do'] == 'execution':
+                                wait_for_trigger('qubit')
                             reset_frame('qubit')
                             wait(initial_delay, 'qubit')
                             with if_(k == 0):  # +x readout
@@ -387,6 +388,7 @@ class PDDSyncAFM(Script):
             Parameter('3pi_half_pulse_time', 96, float, 'time duration of a 3pi/2 pulse (in ns)'),
         ]),
         # Parameter('tau', 20000, int, 'time between the two pi/2 pulses (in ns)'),
+        Parameter('save_all', False, bool, 'whether to save all the data during the time averaging'),
         Parameter('f_exc', 191, float, 'tuning fork excitation frequency (in kHz)'),
         Parameter('initial_delay_offset', 16, float, 'initial delay manual offset in ns'),
         Parameter('decoupling_seq', [
@@ -680,6 +682,9 @@ class PDDSyncAFM(Script):
 
                     with stream_processing():
                         total_counts_st.buffer(4).average().save("live_data")
+
+                        if self.settings['save_all']:
+                            total_counts_st.buffer(4).save_all("all_data")
                         # total_counts_st.buffer(tracking_num).save("current_counts")
                         rep_num_st.save("live_rep_num")
 
@@ -725,6 +730,11 @@ class PDDSyncAFM(Script):
             print('** ATTENTION **')
             print(e)
         else:
+
+            if self.settings['save_all']:
+                all_data_handle = job.result_handles.get("all_data")
+                all_data_handle.wait_for_values(1)
+
             vec_handle = job.result_handles.get("live_data")
             progress_handle = job.result_handles.get("live_rep_num")
             # tracking_handle = job.result_handles.get("current_counts")
@@ -765,11 +775,29 @@ class PDDSyncAFM(Script):
                     self.progress = current_rep_num * 100. / self.settings['rep_num']
                     self.updateProgress.emit(int(self.progress))
 
+                if self.settings['save_all']:
+                    try:
+                        all_data = all_data_handle.fetch_all()
+                    except Exception as e:
+                        print('** ATTENTION **')
+                        print(e)
+
                 if self._abort:
                     self.qm.execute(job_stop)
                     break
 
                 time.sleep(1.0)
+
+        if self.settings['save_all']:
+            try:
+                all_data_vec = np.zeros([len(all_data), 4])
+                for i in range(len(all_data)):
+                    all_data_vec[i] = all_data[i][0]
+            except Exception as e:
+                print('** ATTENTION **')
+                print(e)
+            else:
+                self.data['raw_data'] = all_data_vec
 
         self.instruments['mw_gen_iq']['instance'].update({'enable_output': False})
         self.instruments['mw_gen_iq']['instance'].update({'ext_trigger': False})
@@ -809,7 +837,7 @@ class PDDSyncAFM(Script):
                             self.settings['mw_pulses']['3pi_half_pulse_time'], data['tau'], data['squared_sum_root'], data['phase'])
                     )
                 else:
-                    axes_list[0].set_title('{:0.1f}kcps'.format(data['ref_cnts']))
+                    axes_list[0].set_title('{:0.1f}kcps, {:0.2f}rad'.format(data['ref_cnts'], data['phase']))
 
             except Exception as e:
                 print('** ATTENTION **')

@@ -83,7 +83,7 @@ class Agilent33120A(Instrument):
         super(Agilent33120A, self).update(settings)
         # ===========================================
         FREQ_MIN = 0.01 # 10mHz
-        FREQ_MAX = 5000000  # 5MHz for burst
+        FREQ_MAX = 15000000  # 5MHz for burst
         AMP_MIN = 0  # 0Vpp
         AMP_MAX = 20  # 20Vpp
         CNT_MIN = 1 # minimum burst counts = 1
@@ -112,10 +112,10 @@ class Agilent33120A(Instrument):
                     value = self._output_to_internal(value)
                 elif key == 'frequency':
                     if value > FREQ_MAX:
-                        print('Invalid frequency. All frequencies must be between 10mHz and 5MHz. Set to 5MHz instead')
-                        value = 5000000.0
+                        print('Invalid frequency. All frequencies must be between 10mHz and 15MHz. Set to 15MHz instead')
+                        value = FREQ_MAX
                     elif value < FREQ_MIN:
-                        print('Invalid frequency. All frequencies must be between 10mHz and 5MHz. Set to 10mHz instead')
+                        print('Invalid frequency. All frequencies must be between 10mHz and 15MHz. Set to 10mHz instead')
                         value = 0.01
                 elif key == 'amplitude':
                     if value > AMP_MAX:

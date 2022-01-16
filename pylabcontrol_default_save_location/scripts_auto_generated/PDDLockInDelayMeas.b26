@@ -1,0 +1,63 @@
+{
+    "scripts": {
+        "PDDLockInDelayMeas": {
+            "class": "PDDLockInDelayMeas",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\qm_scripts\\lock_in.py",
+            "info": "QObject(parent: QObject = None)",
+            "package": "b26_toolkit",
+            "instruments": {
+                "mw_gen_iq": {
+                    "class": "SGS100ARFSource",
+                    "settings": {
+                        "VISA_address": "USB0::0x0AAD::0x0088::110207::0::INSTR",
+                        "frequency": 2870000000.0,
+                        "amplitude": -50,
+                        "enable_output": false,
+                        "enable_IQ": false,
+                        "ext_trigger": false
+                    }
+                }
+            },
+            "settings": {
+                "IP_address": "automatic",
+                "to_do": "simulation",
+                "delay_times": {
+                    "min_time": 16,
+                    "max_time": 500,
+                    "time_step": 28
+                },
+                "mw_pulses": {
+                    "mw_frequency": 2870000000.0,
+                    "mw_power": -10.0,
+                    "IF_frequency": 100000000.0,
+                    "IF_amp": 1.0,
+                    "pi_pulse_time": 72,
+                    "pi_half_pulse_time": 36,
+                    "3pi_half_pulse_time": 96
+                },
+                "tau": 10000,
+                "gate_voltages": {
+                    "offset": 0,
+                    "amplitude": 0.48,
+                    "phase": 0
+                },
+                "decoupling_seq": {
+                    "type": "XY8",
+                    "num_of_pulse_blocks": 1
+                },
+                "read_out": {
+                    "meas_len": 180,
+                    "nv_reset_time": 2000,
+                    "delay_readout": 370,
+                    "laser_off": 500,
+                    "delay_mw_readout": 600
+                },
+                "rep_num": 200000,
+                "simulation_duration": 50000,
+                "path": "",
+                "tag": "pddlockindelaymeas",
+                "save": false
+            }
+        }
+    }
+}

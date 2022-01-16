@@ -23,7 +23,7 @@ from .qm_scripts.echo import EchoQM, PDDQM, PDDSingleTau, ACSensingDigitalGate, 
 from .qm_scripts.afm_sync_sensing import EchoSyncAFM, PDDSyncAFM, PDDSyncAFMDelayMeas, DCSensingSyncAFM, DCSensingPDDSyncAFM
 from .scanning.scanning_rabi import ScanningRabi
 from .scanning.scanning_ac_sensing import ScanningACSensing, ScanningACSensing2D
-from .scanning.scanning_dc_sensing import ScanningDCSensing
+from .scanning.scanning_dc_sensing import ScanningDCSensing, ScanningDCSensing2D, ScanningRamseyLockIn, ScanningRamseyLockIn2D
 from .qm_scripts.ramsey import RamseyQM, RamseyQM_v2, Ramsey_SingleTau, DCSensing, RamseySyncReadout
 from .qm_scripts.pulsed_esr import PulsedESR
 from .qm_scripts.counter_time_trace import CounterTimeTrace

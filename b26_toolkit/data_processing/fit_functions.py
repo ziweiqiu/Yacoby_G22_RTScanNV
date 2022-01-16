@@ -470,3 +470,29 @@ def fit_rabi_decay(t, y, variable_phase=True, verbose=False, return_guess = Fals
         return opt.x, opt.success, initial_parameter
     else:
         return opt.x, opt.success
+
+def sine(t, A, phi, omega, offset):
+    return -A * np.sin(t * omega + phi) + offset
+
+
+def fit_sine_amplitude(t, signal, tip_freq=32.6):
+    # freq is in kHz
+    popt, pcov = optimize.curve_fit(sine, t, signal,
+                                    bounds=([0, -1 * np.pi, 2 * np.pi * tip_freq / 1e3 * 0.8, -2 * np.pi],
+                                            [3, 1 * np.pi, 2 * np.pi * tip_freq / 1e3 * 1.2, 2 * np.pi]))
+
+
+    err = np.sqrt(np.diag(pcov))
+
+    A_fit = popt[0]
+    A_fit_err  = err[0]
+
+    phi_fit = popt[1]/np.pi*180
+    phi_fit_err = err[1]/np.pi*180
+
+    freq_fit = popt[2] / 2 / np.pi * 1000  # in kHz
+
+
+    offset_fit = popt[3]
+
+    return A_fit, A_fit_err, phi_fit, phi_fit_err, freq_fit, offset_fit

@@ -11,6 +11,7 @@ from b26_toolkit.plotting.plots_1d import plot_qmsimulation_samples
 from b26_toolkit.instruments import SGS100ARFSource, Agilent33120A
 from b26_toolkit.scripts.qm_scripts.Configuration import config
 from b26_toolkit.scripts.optimize import OptimizeNoLaser, optimize
+from b26_toolkit.data_processing.fit_functions import fit_sine_amplitude, sine
 
 
 class RamseyQM(Script):
@@ -1113,6 +1114,8 @@ class Ramsey_SingleTau(Script):
                         self.settings['mw_pulses']['pi_half_pulse_time'], self.settings['mw_pulses']['detuning'] * 1e-6,
                         data['tau'], data['signal_ramsey'], data['phase'])
                 )
+            else:
+                axes_list[0].set_title('Ramsey: {:0.1f}kcps'.format(data['ref_cnts']))
 
     def _update_plot(self, axes_list, title=True):
         self._plot(axes_list, title=title)
@@ -1389,8 +1392,9 @@ class RamseySyncReadout(Script):
             Parameter('pi_half_pulse_time', 50, float, 'time duration of a pi/2 pulse (in ns)'),
         ]),
         Parameter('tau', 1000, int, 'time between the two pi/2 pulses (in ns)'),
-        Parameter('ramsey_pts', 20, int,
-                  'number of measurement points. if -1, then ramsey_pts will be automatically determined by the signal period'),
+        Parameter('ramsey_pts', 30, int,
+                  'number of measurement points. if -1, then ramsey_pts will be automatically determined by the signal period. Each point is approximately 4us'),
+        Parameter('fit', False, bool, 'fit the data in real time'),
         Parameter('read_out', [
             Parameter('meas_len', 180, int, 'measurement time in ns'),
             Parameter('nv_reset_time', 2000, int, 'laser on time in ns'),
@@ -1657,6 +1661,18 @@ class RamseySyncReadout(Script):
                     print('** ATTENTION in vec_handle **')
                     print(e)
 
+                # do fitting
+                if self.settings['fit']:
+                    try:
+                        us_per_pt = 4
+                        first_pt_us = 4
+                        A_fit, A_fit_err, phi_fit, phi_fit_err, freq_fit, offset_fit = \
+                            fit_sine_amplitude(np.arange(self.ramsey_pts) * us_per_pt + first_pt_us, self.data['phase'])
+                    except Exception as e:
+                        print('** ATTENTION in fitting **')
+                        print(e)
+                    else:
+                        self.data['fits'] = np.array([A_fit, A_fit_err, phi_fit, phi_fit_err, freq_fit, offset_fit])
 
                 try:
                     current_rep_num = progress_handle.fetch_all()
@@ -1701,15 +1717,16 @@ class RamseySyncReadout(Script):
         if 'tau' in data.keys() and 'signal_avg_vec' in data.keys():
             x_array = np.arange(len(data['signal_avg_vec'][0, :]))
 
-            axes_list[2].clear()
-            if data['signal_avg_vec'] is not None:
-                axes_list[2].plot(x_array, data['signal_avg_vec'][0, :], label="+x")
-                axes_list[2].plot(x_array, data['signal_avg_vec'][1, :], label="-x")
-                axes_list[2].plot(x_array, data['signal_avg_vec'][2, :], label="+y")
-                axes_list[2].plot(x_array, data['signal_avg_vec'][3, :], label="-y")
-            axes_list[2].set_xlabel('Time [a.u.]')
-            axes_list[2].set_ylabel('Normalized Counts')
-            axes_list[2].legend(loc='upper center', bbox_to_anchor=(1.1, 1.2), ncol=1, fontsize=9)
+            if title: # if title is False, then no need to plot on axes_list in a scanning measurmenet
+                axes_list[2].clear()
+                if data['signal_avg_vec'] is not None:
+                    axes_list[2].plot(x_array, data['signal_avg_vec'][0, :], label="+x")
+                    axes_list[2].plot(x_array, data['signal_avg_vec'][1, :], label="-x")
+                    axes_list[2].plot(x_array, data['signal_avg_vec'][2, :], label="+y")
+                    axes_list[2].plot(x_array, data['signal_avg_vec'][3, :], label="-y")
+                axes_list[2].set_xlabel('Time [a.u.]')
+                axes_list[2].set_ylabel('Normalized Counts')
+                axes_list[2].legend(loc='upper center', bbox_to_anchor=(1.1, 1.2), ncol=1, fontsize=9)
 
             axes_list[0].clear()
             if data['signal_norm'] is not None:
@@ -1719,29 +1736,54 @@ class RamseySyncReadout(Script):
             if data['signal_ramsey'] is not None:
                 axes_list[0].plot(x_array, data['signal_ramsey'], label="squared sum root")
             axes_list[0].set_ylabel('Contrast')
-            axes_list[0].legend(loc='upper right')
+            if title:
+                axes_list[0].legend(loc='upper right')
 
             axes_list[1].clear()
             if data['phase'] is not None:
                 axes_list[1].plot(x_array, data['phase'])
-            axes_list[1].set_xlabel('Time [a.u.]')
+            if self.settings['fit'] and 'fits' in data.keys():
+                us_per_pt = 4
+                first_pt_us = 4
+                if title:
+                    axes_list[1].plot(x_array, sine(x_array * us_per_pt + first_pt_us, data['fits'][0],
+                                                    data['fits'][2] / 180 * np.pi, data['fits'][4] / 1000 * 2 * np.pi,
+                                                    data['fits'][5]), lw=2,
+                                      label='sinusoidal fit\n A={:0.2f}+/-{:0.2f} rad\n phi={:0.2f}+/-{:0.2f} deg\n freq={:0.1f}kHz'.format(
+                                          data['fits'][0],
+                                          data['fits'][1],
+                                          data['fits'][2],
+                                          data['fits'][3],
+                                          data['fits'][4]))
+                else:
+                    axes_list[1].plot(x_array, sine(x_array * us_per_pt + first_pt_us, data['fits'][0],
+                                                    data['fits'][2] / 180 * np.pi, data['fits'][4] / 1000 * 2 * np.pi,
+                                                    data['fits'][5]), lw=2,
+                                      label='A={:0.2f}rad, phi={:0.2f}deg'.format(data['fits'][0], data['fits'][2]))
+
+                axes_list[1].legend(loc='upper right')
+            if not title:
+                axes_list[1].set_xlabel('Time [4us]')
+            axes_list[1].set_xlabel('Time [4us]')
             axes_list[1].set_ylabel('Phase [rad]')
 
-            axes_list[0].set_title(
-                'Ramsey Lock-In Measurement\nRef fluor: {:0.1f}kcps, Repetition number: {:d}, tau: {:2.1f}ns\nRF power: {:0.1f}dBm, LO freq: {:0.4f}GHz, IF amp: {:0.1f}, IF freq: {:0.2f}MHz\nπ/2 time: {:2.1f}ns, detuning: {:0.4f}MHz\nsignal: freq: {:0.2f}kHz, amp: {:0.2f}Vpp, offset: {:0.2f}V, wave: {:s}'.format(
-                    data['ref_cnts'], int(data['rep_num']), self.settings['tau'],
-                    self.settings['mw_pulses']['mw_power'], self.settings['mw_pulses']['mw_frequency'] * 1e-9,
-                    self.settings['mw_pulses']['IF_amp'], self.settings['mw_pulses']['IF_frequency'] * 1e-6,
-                    self.settings['mw_pulses']['pi_half_pulse_time'], self.settings['mw_pulses']['detuning'] * 1e-6,
-                                                            self.settings['signal']['frequency'] * 1e-3,
-                    self.settings['signal']['amplitude'],
-                    self.settings['signal']['offset'], self.settings['signal']['wave_shape']
+            if title:
+                axes_list[0].set_title(
+                    'Ramsey Lock-In Measurement\nRef fluor: {:0.1f}kcps, Repetition number: {:d}, tau: {:2.1f}ns\nRF power: {:0.1f}dBm, LO freq: {:0.4f}GHz, IF amp: {:0.1f}, IF freq: {:0.2f}MHz\nπ/2 time: {:2.1f}ns, detuning: {:0.4f}MHz\nsignal: freq: {:0.2f}kHz, amp: {:0.2f}Vpp, offset: {:0.2f}V, wave: {:s}'.format(
+                        data['ref_cnts'], int(data['rep_num']), self.settings['tau'],
+                        self.settings['mw_pulses']['mw_power'], self.settings['mw_pulses']['mw_frequency'] * 1e-9,
+                        self.settings['mw_pulses']['IF_amp'], self.settings['mw_pulses']['IF_frequency'] * 1e-6,
+                        self.settings['mw_pulses']['pi_half_pulse_time'], self.settings['mw_pulses']['detuning'] * 1e-6,
+                                                                self.settings['signal']['frequency'] * 1e-3,
+                        self.settings['signal']['amplitude'],
+                        self.settings['signal']['offset'], self.settings['signal']['wave_shape']
+                    )
                 )
-            )
+            else:
+                axes_list[0].set_title('{:0.1f}kcps'.format(data['ref_cnts']))
 
-
-    def _update_plot(self, axes_list):
-        self._plot(axes_list)
+    def _update_plot(self, axes_list, title=True):
+        self._plot(axes_list, title=title)
 
     def get_axes_layout(self, figure_list):
         """
@@ -1767,6 +1809,7 @@ class RamseySyncReadout(Script):
             axes_list.append(figure_list[1].axes[0])
 
         return axes_list
+
 
 
 

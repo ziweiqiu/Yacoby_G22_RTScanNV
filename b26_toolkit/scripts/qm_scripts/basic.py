@@ -484,6 +484,8 @@ class RabiQM(Script):
                                 data['ref_cnts'], int(data['rep_num']),
                                 self.settings['mw_pulses']['mw_power'], self.settings['mw_pulses']['mw_frequency'] * 1e-9,
                                 self.settings['mw_pulses']['IF_amp'], self.settings['mw_pulses']['IF_frequency'] * 1e-6))
+                    else:
+                        axes_list[0].set_title('{:0.1f}kcps'.format(data['ref_cnts']))
                     axes_list[0].set_xlabel('Rabi tau [ns]')
                     axes_list[0].set_ylabel('Contrast')
 
