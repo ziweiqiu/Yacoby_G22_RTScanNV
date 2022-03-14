@@ -69,7 +69,6 @@ class ScanningRabi(Script):
         self.scripts['afm1d'].settings['num_of_rounds'] = 1
         self.scripts['afm1d'].settings['ending_behavior'] = 'leave_at_last'
         self.scripts['afm1d'].settings['height'] = 'absolute'
-
         self.scripts['afm1d'].settings['point_a']['x'] = afm_start[0]
         self.scripts['afm1d'].settings['point_a']['y'] = afm_start[1]
         self.scripts['afm1d'].settings['point_b']['x'] = afm_end[0]

@@ -61,4 +61,5 @@ along with pylabcontrol.  If not, see <http://www.gnu.org/licenses/>.")
 
 
 if __name__ == '__main__':
+    print('here')
     run_gui()

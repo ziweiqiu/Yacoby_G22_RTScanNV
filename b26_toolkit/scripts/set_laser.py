@@ -371,17 +371,18 @@ class SetScannerXY_gentle(Script):
             print('Scanner: Vx={:.3}V, Vy={:.3}V'.format(current_position[0], current_position[1]))
             self.log('Scanner: Vx={:.3}V, Vy={:.3}V'.format(current_position[0], current_position[1]))
 
-
         if self.settings['to_do'] == 'set':
             if 0<=self.settings['point']['x']<=8 and 0<=self.settings['point']['y']<=8:
                 self.go_to_pos(current_position, [self.settings['point']['x'], self.settings['point']['y']],
                                self.settings['scan_speed'])
                 current_position = self.get_scanner_position()
-                print('Scanner: Vx={:.3}V, Vy={:.3}V'.format(current_position[0], current_position[1]))
-                self.log('Scanner: Vx={:.3}V, Vy={:.3}V'.format(current_position[0], current_position[1]))
+                if self.settings['verbose']:
+                    print('Scanner: Vx={:.3}V, Vy={:.3}V'.format(current_position[0], current_position[1]))
+                    self.log('Scanner: Vx={:.3}V, Vy={:.3}V'.format(current_position[0], current_position[1]))
             else:
-                print('**ATTENTION**: Voltage exceeds limit [0 8]. No action.')
-                self.log('**ATTENTION**: Voltage exceeds limit [0 8]. No action.')
+                if self.settings['verbose']:
+                    print('**ATTENTION**: Voltage exceeds limit [0 8]. No action.')
+                    self.log('**ATTENTION**: Voltage exceeds limit [0 8]. No action.')
                 self._abort = True
 
     def go_to_pos(self, Vstart, Vend, scan_speed):

@@ -22,7 +22,7 @@ import math
 from scipy import ndimage
 from pyanc350.v2 import Positioner
 
-from b26_toolkit.instruments import NI6733, NI6602, NI6220, NI6210,G22BPulseBlaster
+from b26_toolkit.instruments import NI6733, NI6602, NI6220, NI6210,G22BPulseBlaster, SGS100ARFSource
 from b26_toolkit.plotting.plots_2d import plot_fluorescence_new, update_fluorescence
 from pylabcontrol.core import Script, Parameter
 from b26_toolkit.plotting.plots_1d import update_counts_vs_pos, plot_counts_vs_pos, \
@@ -34,11 +34,11 @@ from qm.qua import *
 from b26_toolkit.scripts.qm_scripts.Configuration import config
 
 import smtplib, ssl
-receiver_email = "ziweiqiu@g.harvard.edu"
+receiver_email = ""
 def send_email(receiver_email, message):
     port = 465  # For SSL
-    password = "diamond2020"
-    sender_email = "nv.scanning.alert@gmail.com"
+    password = ""
+    sender_email = ""
     # Create a secure SSL context
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
@@ -622,7 +622,7 @@ class ObjectiveScan_qm(Script):
                                                  self.settings['num_points'][self.var1])),
                          'bounds': [self.var1range[0], self.var1range[1],
                                     self.var2range[0], self.var2range[1]]}
-            self.data['extent'] = [self.var1range[0], self.var1range[1], self.var2range[1], self.var2range[0]]
+            image_data
             self.data['varlbls'] = [self.var1 + ' [V]', self.var2 + ' [V]']
 
             # objective takes longer to settle after big jump, so give it time before starting scan:
@@ -1776,8 +1776,6 @@ class AFM1D(Script):
         self.daq_in_AI.settings['analog_input'][
             self.settings['DAQ_channels']['z_ai_channel']]['sample_rate'] = self.sample_rate
 
-        # refresh_N = self.settings['refresh_per_N_pt']
-
         self.data['scan_pos_1d'] = scan_pos_1d
         self.data['dist_array'] = dist_array
         self.data['data_ctr'] = np.array([np.zeros(N)])
@@ -2035,17 +2033,17 @@ class AFM1D(Script):
         if data is None:
             data = self.data
         plot_counts_vs_pos_multilines(axes_list[0], data['data_ctr'], data['dist_array'], x_label='Position [V]',
-                                      title='NV-AFM 1D Scan')
+                                      title='NV-AFM 1D Scan', moving_average=20)
         plot_counts_vs_pos_multilines(axes_list[1], data['data_analog'], data['dist_array'], x_label='Position [V]',
-                                      y_label='Z_out [V]')
+                                      y_label='Z_out [V]', moving_average=20)
 
     def _update_plot(self, axes_list):
         plot_counts_vs_pos_multilines(axes_list[0], self.data['data_ctr'], self.data['dist_array'],
                                       x_label='Position [V]',
-                                      title='NV-AFM 1D Scan')
+                                      title='NV-AFM 1D Scan', moving_average=20)
         plot_counts_vs_pos_multilines(axes_list[1], self.data['data_analog'], self.data['dist_array'],
                                       x_label='Position [V]',
-                                      y_label='Z_out [V]')
+                                      y_label='Z_out [V]', moving_average=20)
 
     def get_axes_layout(self, figure_list):
         """
@@ -2197,7 +2195,6 @@ class AFM1D_qm(Script):
             except Exception as e:
                 print('** ATTENTION in creating ANC_sample **')
                 print(e)
-
 
     def _check_AFM(self):
         z_out = self.daq_in_usbAI.get_analog_voltages([self.settings['DAQ_channels']['z_usb_ai_channel']])
@@ -2551,6 +2548,8 @@ Attention! AFM just failed BUT the tip CANNOT be retracted. Please take action!"
             print('Plot refresh per {:d} points.'.format(refresh_N))
         return refresh_N
 
+
+
     def _plot(self, axes_list, data=None, title=True):
         """
             Plots the confocal scan image
@@ -2568,11 +2567,14 @@ Attention! AFM just failed BUT the tip CANNOT be retracted. Please take action!"
             title_name = None
 
         if 'data_ctr' in data.keys() and 'dist_array' in data.keys():
+
             plot_counts_vs_pos_multilines(axes_list[0], data['data_ctr'], data['dist_array'], x_label='Position [V]',
-                                          title=title_name)
+                                          title=title_name, moving_average=30)
+
+
         if 'data_analog' in data.keys() and 'dist_array' in data.keys():
             plot_counts_vs_pos_multilines(axes_list[1], data['data_analog'], data['dist_array'], x_label='Position [V]',
-                                          y_label='Z_out [V]')
+                                          y_label='Z_out [V]', moving_average=0)
 
     def _update_plot(self, axes_list, title=True, monitor_AFM=True):
         if monitor_AFM and self.anc_sample_connected:
@@ -2587,10 +2589,10 @@ Attention! AFM just failed BUT the tip CANNOT be retracted. Please take action!"
 
         if 'data_ctr' in self.data.keys() and 'dist_array' in self.data.keys():
             plot_counts_vs_pos_multilines(axes_list[0], self.data['data_ctr'], self.data['dist_array'],
-                                          x_label='Position [V]', title=title_name)
+                                          x_label='Position [V]', title=title_name, moving_average=30)
         if 'data_analog' in self.data.keys() and 'dist_array' in self.data.keys():
             plot_counts_vs_pos_multilines(axes_list[1], self.data['data_analog'], self.data['dist_array'],
-                                          x_label='Position [V]', y_label='Z_out [V]')
+                                          x_label='Position [V]', y_label='Z_out [V]', moving_average=0)
 
     def get_axes_layout(self, figure_list):
         """
@@ -3759,7 +3761,6 @@ class AFM2D_qm_v2(Script):
                 print('** ATTENTION in creating ANC_sample **')
                 print(e)
 
-
     def _check_AFM(self):
         z_out = self.daq_in_usbAI.get_analog_voltages([self.settings['DAQ_channels']['z_usb_ai_channel']])
         self.Z_scanner_now = z_out[0]
@@ -4281,6 +4282,1241 @@ class AFM2D_qm_v2(Script):
             axes_list.append(figure_list[1].axes[1])
         return axes_list
 
+
+# class AFM2D_MW_0(Script):
+#     """
+#         AFM 2D scan with MW turned on. Each line will be scanned back and forth.
+#         - Ziwei Qiu 3/2/2022
+#     """
+#     _DEFAULT_SETTINGS = [
+#         Parameter('IP_address', 'automatic', ['140.247.189.191', 'automatic'],
+#                   'IP address of the QM server'),
+#         Parameter('to_do', 'print_info', ['print_info', 'execution'],
+#                   'choose to print information of the scanning settings or do real scanning'),
+#         Parameter('scan_center',
+#                   [Parameter('x', 0.5, float, 'x-coordinate [V]'),
+#                    Parameter('y', 0.5, float, 'y-coordinate [V]')
+#                    ]),
+#         Parameter('scan_direction',
+#                   [Parameter('pt1',
+#                              [Parameter('x', 0.0, float, 'x-coordinate [V]'),
+#                               Parameter('y', 0.0, float, 'y-coordinate [V]')
+#                               ]),
+#                    Parameter('pt2',
+#                              [Parameter('x', 1.0, float, 'x-coordinate [V]'),
+#                               Parameter('y', 0.0, float, 'y-coordinate [V]')
+#                               ]),
+#                    Parameter('type', 'parallel', ['perpendicular', 'parallel'],
+#                              'scan direction perpendicular or parallel to the pt1pt2 line')
+#                    ]),
+#         Parameter('scan_size', 1.0, float, '[V]'),
+#         Parameter('resolution', 0.0001, [0.0001], '[V] step size between scanning points. 0.0001V is roughly 0.5nm.'),
+#         Parameter('scan_speed', 0.04, [0.01, 0.02, 0.04, 0.06, 0.08, 0.1],
+#                   '[V/s] scanning speed on average. suggest 0.04V/s, i.e. 200nm/s. Note that the jump between neighboring points is instantaneous. Scan_speed determines the time at each point.'),
+#         Parameter('laser_on', True, bool, 'turn on laser during scanning'),
+#         Parameter('microwave', [
+#             Parameter('mw_on', False, bool, 'turn on the microwave'),
+#             Parameter('mw_frequency', 2.87e9, float, 'LO frequency in Hz'),
+#             Parameter('mw_power', -20.0, float, 'RF power in dBm'),
+#             Parameter('IF_frequency', 100e6, float, 'IF frequency in Hz from the QM'),
+#             Parameter('IF_amp', 1.0, float, 'amplitude of the IF pulse, between 0 and 1'),
+#         ]),
+#         Parameter('max_counts_plot', -1, int, 'Rescales colorbar with this as the maximum counts on replotting'),
+#         Parameter('min_counts_plot', -1, int, 'Rescales colorbar with this as the maximum counts on replotting'),
+#         Parameter('DAQ_channels',
+#                   [Parameter('x_ao_channel', 'ao0', ['ao0', 'ao1', 'ao2', 'ao3', 'ao4', 'ao5', 'ao6', 'ao7'],
+#                              'Daq channel used for x voltage analog output'),
+#                    Parameter('y_ao_channel', 'ao1', ['ao0', 'ao1', 'ao2', 'ao3', 'ao4', 'ao5', 'ao6', 'ao7'],
+#                              'Daq channel used for y voltage analog output'),
+#                    Parameter('x_ai_channel', 'ai3',
+#                              ['ai0', 'ai1', 'ai2', 'ai3', 'ai4', 'ai5', 'ai6', 'ai7', 'ai8', 'ai9', 'ai10', 'ai11',
+#                               'ai12', 'ai13', 'ai14', 'ai14'],
+#                              'Daq channel used for measuring x-scanner voltage'),
+#                    Parameter('y_ai_channel', 'ai4',
+#                              ['ai0', 'ai1', 'ai2', 'ai3', 'ai4', 'ai5', 'ai6', 'ai7', 'ai8', 'ai9', 'ai10', 'ai11',
+#                               'ai12', 'ai13', 'ai14', 'ai14'],
+#                              'Daq channel used for measuring y-scanner voltage'),
+#                    Parameter('z_ai_channel', 'ai2',
+#                              ['ai0', 'ai1', 'ai2', 'ai3', 'ai4', 'ai5', 'ai6', 'ai7', 'ai8', 'ai9', 'ai10', 'ai11',
+#                               'ai12', 'ai13', 'ai14', 'ai14'],
+#                              'Daq channel used for measuring z-scanner voltage'),
+#                    Parameter('counter_channel', 'ctr0', ['ctr0', 'ctr1'],
+#                              'Daq channel used for counter')
+#                    ]),
+#         Parameter('ending_behavior', 'leave_at_last', ['return_to_initial', 'return_to_origin', 'leave_at_last'],
+#                   'select the ending behavior'),
+#     ]
+#     _INSTRUMENTS = {'NI6733': NI6733, 'NI6602': NI6602, 'NI6220': NI6220, 'mw_gen_iq': SGS100ARFSource}
+#     _SCRIPTS = {'SetScanner': SetScannerXY_gentle}
+#
+#     def __init__(self, instruments=None, scripts=None, name=None, settings=None, log_function=None, data_path=None):
+#         '''
+#         Initializes AFM2D script for use in gui
+#         Args:
+#             instruments: list of instrument objects
+#             name: name to give to instantiated script object
+#             settings: dictionary of new settings to pass in to override defaults
+#             log_function: log function passed from the gui to direct log calls to the gui log
+#             data_path: path to save data
+#         '''
+#         Script.__init__(self, name, settings=settings, instruments=instruments, scripts=scripts,
+#                         log_function=log_function, data_path=data_path)
+#
+#         # defines which daqs contain the input and output based on user selection of daq interface
+#         self.daq_in_DI = self.instruments['NI6602']['instance']
+#         self.daq_in_AI = self.instruments['NI6220']['instance']
+#         self.daq_out = self.instruments['NI6733']['instance']
+#         self.qm_connect()
+#
+#     def qm_connect(self):
+#         if self.settings['IP_address'] == 'automatic':
+#             try:
+#                 self.qmm = QuantumMachinesManager()
+#             except Exception as e:
+#                 print('** ATTENTION **')
+#                 print(e)
+#         else:
+#             try:
+#                 self.qmm = QuantumMachinesManager(host=self.settings['IP_address'])
+#             except Exception as e:
+#                 print('** ATTENTION **')
+#                 print(e)
+#
+#     def turn_on_laser_mw(self):
+#         try:
+#             self.qm = self.qmm.open_qm(config)
+#         except Exception as e:
+#             print('** ATTENTION **')
+#             print(e)
+#         else:
+#             if self.settings['microwave']['mw_on']:
+#                 IF_amp = self.settings['microwave']['IF_amp']
+#                 if IF_amp > 1.0:
+#                     IF_amp = 1.0
+#                 elif IF_amp < 0.0:
+#                     IF_amp = 0.0
+#                 with program() as laser_mw_on:
+#                     update_frequency('qubit', self.settings['microwave']['IF_frequency'])
+#                     with infinite_loop_():
+#                         play('const' * amp(IF_amp), 'qubit', duration=5000)
+#                         play('trig', 'laser', duration=5000)
+#
+#                 self.instruments['mw_gen_iq']['instance'].update({'amplitude': self.settings['microwave']['mw_power']})
+#                 self.instruments['mw_gen_iq']['instance'].update({'frequency': self.settings['microwave']['mw_frequency']})
+#                 self.instruments['mw_gen_iq']['instance'].update({'enable_IQ': True})
+#                 self.instruments['mw_gen_iq']['instance'].update({'ext_trigger': False})
+#                 self.instruments['mw_gen_iq']['instance'].update({'enable_output': True})
+#                 print('Turned on RF generator SGS100A (IQ on, no trigger).')
+#
+#                 self.qm.execute(laser_mw_on)
+#                 print('Laser and mw are on.')
+#             else:
+#                 with program() as laser_on:
+#                     with infinite_loop_():
+#                         play('trig', 'laser', duration=5000)
+#                 self.qm.execute(laser_on)
+#                 print('Laser is on.')
+#
+#     def turn_off_laser_mw(self):
+#         try:
+#             self.qm = self.qmm.open_qm(config)
+#         except Exception as e:
+#             print('** ATTENTION **')
+#             print(e)
+#         else:
+#             with program() as job_stop:
+#                 play('trig', 'laser', duration=10)
+#
+#             self.qm.execute(job_stop)
+#             print('Laser is off.')
+#
+#         self.instruments['mw_gen_iq']['instance'].update({'enable_output': False})
+#         self.instruments['mw_gen_iq']['instance'].update({'enable_IQ': False})
+#         self.instruments['mw_gen_iq']['instance'].update({'ext_trigger': False})
+#         print('Turned off RF generator SGS100A (IQ off, trigger off).')
+#
+#     def _function(self):
+#         """
+#             Executes threaded 1D sample scanning
+#         """
+#         self._get_scan_extent()
+#         T_tot = self.settings['scan_size'] / self.settings['scan_speed']
+#         ptspervolt = float(1) / self.settings['resolution']
+#         N = int(np.ceil(self.settings['scan_size'] * ptspervolt / 2) * 2)  # number of samples
+#         N -= 1
+#         dt = T_tot / N
+#         refresh_N = self._find_refresh_N(dt, N)
+#
+#         if self.settings['to_do'] == 'print_info':
+#             print('No scanning started.')
+#
+#         elif np.max([self.pta, self.ptb, self.ptc, self.ptd]) <= 8 and np.min(
+#                 [self.pta, self.ptb, self.ptc, self.ptd]) >= 0:
+#             self.scripts['SetScanner'].update({'to_do': 'set'})
+#             self.scripts['SetScanner'].update({'scan_speed': self.settings['scan_speed']})
+#             self.scripts['SetScanner'].settings['step_size'] = self.settings['resolution']
+#
+#             # turn on laser and mw
+#             if self.settings['laser_on']:
+#                 self.turn_on_laser_mw()
+#
+#             # Get initial positions
+#             self.varinitialpos = self.daq_in_AI.get_analog_voltages([
+#                 self.settings['DAQ_channels']['x_ai_channel'],
+#                 self.settings['DAQ_channels']['y_ai_channel']]
+#             )
+#             print('Initial position: Vx={:.3}V, Vy={:.3}V'.format(self.varinitialpos[0], self.varinitialpos[1]))
+#             # self.log('Initial position: Vx={:.3}V, Vy={:.3}V'.format(self.varinitialpos[0], self.varinitialpos[1]))
+#
+#             # Set proper sample rates for all the DAQ channels
+#             self.sample_rate = N / T_tot
+#             self.daq_out.settings['analog_output'][
+#                 self.settings['DAQ_channels']['x_ao_channel']]['sample_rate'] = self.sample_rate
+#             self.daq_out.settings['analog_output'][
+#                 self.settings['DAQ_channels']['y_ao_channel']]['sample_rate'] = self.sample_rate
+#             self.daq_in_DI.settings['digital_input'][
+#                 self.settings['DAQ_channels']['counter_channel']]['sample_rate'] = self.sample_rate
+#             self.daq_in_AI.settings['analog_input'][
+#                 self.settings['DAQ_channels']['x_ai_channel']]['sample_rate'] = self.sample_rate
+#             self.daq_in_AI.settings['analog_input'][
+#                 self.settings['DAQ_channels']['y_ai_channel']]['sample_rate'] = self.sample_rate
+#             self.daq_in_AI.settings['analog_input'][
+#                 self.settings['DAQ_channels']['z_ai_channel']]['sample_rate'] = self.sample_rate
+#
+#             # refresh_N = self.settings['refresh_per_N_pt']
+#             # scanner move to self.pta
+#             self.scripts['SetScanner'].settings['point']['x'] = self.pta[0]
+#             self.scripts['SetScanner'].settings['point']['y'] = self.pta[1]
+#             self.scripts['SetScanner'].run()
+#             print('Scanner is set to the initial position')
+#             self.line_index = -1
+#             self.current_round = 0  # odd means forward scan, even means backward scan
+#
+#             self.data = {'data_ctr_for': np.zeros([N, N]), 'data_analog_for': np.zeros([N, N]),
+#                          'data_ctr_back': np.zeros([N, N]),
+#                          'data_analog_back': np.zeros([N, N]),
+#                          'rotated_data_ctr': ndimage.rotate(np.zeros([N, N]), self.rotation_angle),
+#                          'rotated_data_analog': ndimage.rotate(np.zeros([N, N]), self.rotation_angle)}
+#
+#             to_actual_extent = self.settings['scan_size'] / N
+#             self.data['extent'] = [
+#                 self.scan_center[0] - np.shape(self.data['rotated_data_analog'])[0] * to_actual_extent / 2.,
+#                 self.scan_center[0] + np.shape(self.data['rotated_data_analog'])[0] * to_actual_extent / 2.,
+#                 self.scan_center[1] + np.shape(self.data['rotated_data_analog'])[1] * to_actual_extent / 2.,
+#                 self.scan_center[1] - np.shape(self.data['rotated_data_analog'])[1] * to_actual_extent / 2.]
+#             self.data['scan_center'] = self.scan_center
+#             self.data['scan_size'] = self.settings['scan_size']
+#             self.data['vector_x'] = self.vector_x
+#
+#             ETA = 2. * T_tot * N
+#             print('Start AFM scan (ETA = {:.1f}s):'.format(ETA))
+#             self.current_index = 0
+#
+#             tik = time.time()
+#             while True:
+#                 time.sleep(0.1)
+#                 if self.current_round % 2 == 0:
+#                     self.line_index += 1
+#                 # print('current line index', self.line_index)
+#
+#                 if self.line_index >= N:  # if the maximum time is hit
+#                     break
+#                 if self._abort:
+#                     break
+#
+#                 self.current_round += 1
+#
+#                 if self.current_round % 2 == 1:  # odd, forward scan
+#                     print('--> Line index: {} / {}. Forward scan. ETA={:.1f}s.'.format(self.line_index, N, T_tot))
+#                     Vstart = self.pta + self.settings['resolution'] * self.vector_y * self.line_index
+#                     Vend = self.ptb + self.settings['resolution'] * self.vector_y * self.line_index
+#
+#                 else:  # even, backward scan
+#                     print('--> Line index: {} / {}. Backward scan. ETA={:.1f}s.'.format(self.line_index, N, T_tot))
+#                     Vstart = self.ptb + self.settings['resolution'] * self.vector_y * self.line_index
+#                     Vend = self.pta + self.settings['resolution'] * self.vector_y * self.line_index
+#
+#
+#                 scan_pos_1d = np.transpose(np.linspace(Vstart, Vend, N, endpoint=True))
+#
+#
+#                 # Setup DAQ
+#                 ctrtask = self.daq_in_DI.setup_counter(self.settings['DAQ_channels']['counter_channel'], refresh_N,
+#                                                        continuous_acquisition=True)
+#                 aotask = self.daq_out.setup_AO(
+#                     [self.settings['DAQ_channels']['x_ao_channel'], self.settings['DAQ_channels']['y_ao_channel']],
+#                     scan_pos_1d, ctrtask)
+#                 aitask = self.daq_in_AI.setup_AI(self.settings['DAQ_channels']['z_ai_channel'],
+#                                                  refresh_N, continuous=True, clk_source=ctrtask)
+#                 self.daq_out.run(aotask)
+#                 self.daq_in_AI.run(aitask)
+#                 self.daq_in_DI.run(ctrtask)
+#
+#                 # Start 1D scan
+#                 self.current_index = 0
+#                 self.last_value = 0
+#                 normalization = dt / .001  # convert to kcounts/sec
+#
+#                 while True:
+#
+#                     self.progress = (self.current_round * N + self.current_index) * 100. / (2. * N * N)
+#                     self.updateProgress.emit(int(self.progress))
+#
+#                     # print('current_index', self.current_index)
+#                     pt_ETA = refresh_N * self.settings['resolution'] / self.settings['scan_speed']
+#                     print('     Point index: {} / {}. ETA = {:.1f}s'.format(self.current_index, N, pt_ETA))
+#                     if self.current_index >= N:  # if the maximum time is hit
+#                         # self._abort = True  # tell the script to abort
+#                         break
+#                     if self._abort:
+#                         break
+#
+#                     raw_data_analog, num_read_analog = self.daq_in_AI.read(aitask)
+#                     raw_data_ctr, num_read_ctr = self.daq_in_DI.read(ctrtask)
+#
+#                     # store analog data
+#                     if self.current_index == 0:
+#                         # throw the first data point
+#                         raw_data_analog = raw_data_analog[1:]
+#
+#                     if self.current_round % 2 == 1:  # forward scan
+#                         if self.current_index + len(raw_data_analog) < N:
+#                             # print(type(self.line_index))
+#                             self.data['data_analog_for'][self.line_index][
+#                             self.current_index:self.current_index + len(raw_data_analog)] = raw_data_analog
+#                         else:
+#                             self.data['data_analog_for'][self.line_index][
+#                             self.current_index:self.current_index + len(raw_data_analog)] = raw_data_analog[
+#                                                                                             0:N - self.current_index]
+#
+#                         # store counter data
+#                         for value in raw_data_ctr:
+#                             # print('self.last_value', self.last_value)
+#                             if self.current_index >= N:
+#                                 break
+#                             new_val = ((float(value) - self.last_value) / normalization)
+#                             if self.last_value != 0:
+#                                 self.data['data_ctr_for'][self.line_index][self.current_index] = new_val
+#                                 self.current_index += 1
+#                             self.last_value = value
+#
+#                     else:  # backward scan
+#                         if self.current_index + len(raw_data_analog) < N:
+#                             self.data['data_analog_back'][self.line_index][
+#                             N - self.current_index - len(raw_data_analog): N - self.current_index] = np.flip(
+#                                 raw_data_analog)
+#                         else:
+#                             self.data['data_analog_back'][self.line_index][0:N - self.current_index] = np.flip(
+#                                 raw_data_analog[0:N - self.current_index])
+#
+#                         # store counter data
+#                         for value in raw_data_ctr:
+#                             # print('self.last_value', self.last_value)
+#                             if self.current_index >= N:
+#                                 break
+#                             new_val = ((float(value) - self.last_value) / normalization)
+#                             if self.last_value != 0:
+#                                 self.data['data_ctr_back'][self.line_index][N - self.current_index - 1] = new_val
+#                                 self.current_index += 1
+#                             # print('new_val', new_val)
+#                             self.last_value = value
+#                 self.daq_out.stop(ctrtask)
+#                 self.daq_out.stop(aitask)
+#                 self.daq_out.stop(aotask)
+#             tok = time.time()
+#             print('Actual scanning time: {:.1f}s.'.format(tok - tik))
+#
+#             # Return the scanner to certain positions
+#             if self.settings['ending_behavior'] == 'return_to_initial':
+#                 self.scripts['SetScanner'].settings['point']['x'] = self.varinitialpos[0]
+#                 self.scripts['SetScanner'].settings['point']['y'] = self.varinitialpos[0]
+#                 self.scripts['SetScanner'].run()
+#                 print('Sample scanner returned to the initial position.')
+#             elif self.settings['ending_behavior'] == 'return_to_origin':
+#                 self.scripts['SetScanner'].settings['point']['x'] = 0.0
+#                 self.scripts['SetScanner'].settings['point']['y'] = 0.0
+#                 self.scripts['SetScanner'].run()
+#                 print('Sample scanner returned to the origin.')
+#             else:
+#                 print('Sample scanner is left at the last point.')
+#
+#             current_position = self.daq_in_AI.get_analog_voltages([
+#                 self.settings['DAQ_channels']['x_ai_channel'],
+#                 self.settings['DAQ_channels']['y_ai_channel']]
+#             )
+#             print('Scanner: Vx={:.4}V, Vy={:.4}V'.format(current_position[0], current_position[1]))
+#             self.log('Scanner: Vx={:.4}V, Vy={:.4}V'.format(current_position[0], current_position[1]))
+#
+#             # turn off laser
+#             self.turn_off_laser_mw()
+#
+#             self.data['rotated_data_ctr'] = ndimage.rotate(
+#                 0.5 * (self.data['data_ctr_for'] + self.data['data_ctr_back']), self.rotation_angle)
+#             self.data['rotated_data_analog'] = ndimage.rotate(
+#                 0.5 * (self.data['data_analog_for'] + self.data['data_analog_back']), self.rotation_angle)
+#
+#         else:
+#             print('**ATTENTION**: Scanning voltage exceeds limit [0 8]. No action.')
+#             self.log('**ATTENTION**: Scanning voltage exceeds limit [0 8]. No action.')
+#
+#     def is_at_point(self, pt, daq_read_error=0.01):
+#         current_position = self.daq_in_AI.get_analog_voltages([
+#             self.settings['DAQ_channels']['x_ai_channel'],
+#             self.settings['DAQ_channels']['y_ai_channel']]
+#         )
+#         if np.abs(current_position[0] - pt[0]) < daq_read_error and np.abs(
+#                 current_position[1] - pt[1]) < daq_read_error:
+#             return True
+#         else:
+#             return False
+#
+#     def _get_scan_extent(self, verbose=True):
+#         """
+#         Define 4 points and two unit vectors.
+#         self.pta - first point to scan, self.ptb- last point of first line,
+#         self.ptc - first point of last line, self.ptd - last point of last line
+#         self.vector_x - scanning dirction vector, self.vector_y - orthorgonl direction
+#         """
+#         pt1 = np.array([self.settings['scan_direction']['pt1']['x'], self.settings['scan_direction']['pt1']['y']])
+#         pt2 = np.array([self.settings['scan_direction']['pt2']['x'], self.settings['scan_direction']['pt2']['y']])
+#         if (pt1 == pt2)[0] == True and (pt1 == pt2)[1] == True:
+#             print('**ATTENTION** pt1 and pt2 are the same. Please define a valid scan direction. No action.')
+#             self._abort = True
+#         vector_1to2 = self._to_unit_vector(pt1, pt2)
+#
+#         if self.settings['scan_direction']['type'] == 'parallel':
+#             self.vector_x = vector_1to2
+#             self.vector_y = self._get_ortho_vector(self.vector_x)
+#         else:
+#             self.vector_y = vector_1to2
+#             self.vector_x = self._get_ortho_vector(-self.vector_y)
+#
+#         self.rotation_angle = math.acos(np.dot(self.vector_x, np.array([1, 0]))) / np.pi * 180
+#         if self.vector_x[1] > 0:
+#             self.rotation_angle = -self.rotation_angle
+#
+#         if verbose:
+#             print('Scanning details:')
+#             print('     vector_x (inner loop):', self.vector_x)
+#             print('     vector_y (outer loop):', self.vector_y)
+#             print('     rotation_angle:', self.rotation_angle)
+#
+#         self.scan_center = np.array([self.settings['scan_center']['x'], self.settings['scan_center']['y']])
+#         scan_size = self.settings['scan_size']
+#
+#         # define the 4 points
+#         self.pta = self.scan_center - self.vector_x * scan_size / 2. - self.vector_y * scan_size / 2.
+#         self.ptb = self.scan_center + self.vector_x * scan_size / 2. - self.vector_y * scan_size / 2.
+#         self.ptc = self.scan_center - self.vector_x * scan_size / 2. + self.vector_y * scan_size / 2.
+#         self.ptd = self.scan_center + self.vector_x * scan_size / 2. + self.vector_y * scan_size / 2.
+#
+#         if verbose:
+#             print('     self.pta (first point of first line):', self.pta)
+#             print('     self.ptb (last point of first line):', self.ptb)
+#             print('     self.ptc (first point of last line):', self.ptc)
+#             print('     self.ptd (last point of last line):', self.ptd)
+#
+#     def _to_unit_vector(self, pt1, pt2):
+#         unit_vector = (pt2 - pt1) / np.linalg.norm(pt2 - pt1)
+#         return unit_vector
+#
+#     def _get_ortho_vector(self, vector):
+#         ortho_vector = np.array([-vector[1], vector[0]])
+#         return ortho_vector
+#
+#     def _find_refresh_N(self, dt, N, verbose=True):
+#         refresh_N = 4
+#         while True:
+#             if refresh_N >= N:
+#                 refresh_N = int(np.min([N + 1, int(8 / dt)]))
+#                 break
+#             if ((N + 1 + refresh_N) % refresh_N == 0 or (
+#                     N + 1 + refresh_N) % refresh_N >= 0.66 * refresh_N) and 4 <= dt * refresh_N <= 15:
+#                 break
+#             else:
+#                 refresh_N += 1
+#         if verbose:
+#             # print('     type of refresh N', type(refresh_N))
+#             print('     dt={:.3f}s, N={:d}. Plot refresh per {:d} points.'.format(dt, N, refresh_N))
+#         return refresh_N
+#
+#     def _plot(self, axes_list, data=None):
+#         """
+#             Plots the confocal scan image
+#             Args:
+#                 axes_list: list of axes objects on which to plot the galvo scan on the first axes object
+#                 data: data (dictionary that contains keys image_data, extent) if not provided use self.data
+#         """
+#         if data is None:
+#             data = self.data
+#         plot_fluorescence_new(data['data_ctr_for'], [0, self.settings['scan_size'], self.settings['scan_size'], 0],
+#                               axes_list[0], max_counts=self.settings['max_counts_plot'], aspect='equal',
+#                               min_counts=self.settings['min_counts_plot'],
+#                               axes_labels=['1', '2'],
+#                               title='Counts (forward)')
+#         plot_fluorescence_new(data['data_ctr_back'], [0, self.settings['scan_size'], self.settings['scan_size'], 0],
+#                               axes_list[1], max_counts=self.settings['max_counts_plot'], aspect='equal',
+#                               min_counts=self.settings['min_counts_plot'],
+#                               axes_labels=['1', '2'],
+#                               title='Counts (backward)')
+#         plot_fluorescence_new(data['data_analog_for'], [0, self.settings['scan_size'], self.settings['scan_size'], 0],
+#                               axes_list[2], axes_labels=['1', '2'], aspect='equal', title='Height (forward)',
+#                               colorbar_name='Z [V]')
+#         plot_fluorescence_new(data['data_analog_back'], [0, self.settings['scan_size'], self.settings['scan_size'], 0],
+#                               axes_list[3], axes_labels=['1', '2'], aspect='equal', title='Height (backward)',
+#                               colorbar_name='Z [V]')
+#         plot_fluorescence_new(data['rotated_data_ctr'], self.data['extent'],
+#                               axes_list[4], aspect='equal',
+#                               max_counts=np.max(data['data_ctr_for']),
+#                               min_counts=np.min(data['data_ctr_for']),
+#                               axes_labels=['x', 'y'],
+#                               title=None)
+#         plot_fluorescence_new(data['rotated_data_analog'], self.data['extent'],
+#                               axes_list[5], aspect='equal',
+#                               max_counts=np.max(data['data_analog_for']),
+#                               min_counts=np.min(data['data_analog_for']),
+#                               axes_labels=['x', 'y'], title=None,
+#                               colorbar_name='Z [V]')
+#
+#     def _update_plot(self, axes_list):
+#         update_fluorescence(self.data['data_ctr_for'], axes_list[0], max_counts=self.settings['max_counts_plot'],
+#                             min_counts=self.settings['min_counts_plot'])
+#         update_fluorescence(self.data['data_ctr_back'], axes_list[1], max_counts=self.settings['max_counts_plot'],
+#                             min_counts=self.settings['min_counts_plot'])
+#         update_fluorescence(self.data['data_analog_for'], axes_list[2])
+#         update_fluorescence(self.data['data_analog_back'], axes_list[3])
+#
+#     def get_axes_layout(self, figure_list):
+#         """
+#             returns the axes objects the script needs to plot its data
+#             this overwrites the default get_axis_layout in PyLabControl.src.core.scripts
+#             Args:
+#                 figure_list: a list of figure objects
+#             Returns:
+#                 axes_list: a list of axes objects
+#
+#         """
+#         axes_list = []
+#         if self._plot_refresh is True:
+#             for fig in figure_list:
+#                 fig.clf()
+#             axes_list.append(figure_list[0].add_subplot(221))  # axes_list[0]
+#             axes_list.append(figure_list[0].add_subplot(222))  # axes_list[1]
+#             axes_list.append(figure_list[0].add_subplot(223))  # axes_list[2]
+#             axes_list.append(figure_list[0].add_subplot(224))  # axes_list[3]
+#             axes_list.append(figure_list[1].add_subplot(121))  # axes_list[4]
+#             axes_list.append(figure_list[1].add_subplot(122))  # axes_list[5]
+#
+#         else:
+#             axes_list.append(figure_list[0].axes[0])
+#             axes_list.append(figure_list[0].axes[1])
+#             axes_list.append(figure_list[0].axes[2])
+#             axes_list.append(figure_list[0].axes[3])
+#             axes_list.append(figure_list[1].axes[0])
+#             axes_list.append(figure_list[1].axes[1])
+#
+#         return axes_list
+
+class AFM2D_MW(Script):
+    """
+        AFM 2D scan. Each line will be scanned back and forth.
+        - Ziwei Qiu 8/4/2020
+    """
+    _DEFAULT_SETTINGS = [
+        Parameter('IP_address', 'automatic', ['140.247.189.191', 'automatic'],
+                  'IP address of the QM server'),
+        Parameter('to_do', 'print_info', ['print_info', 'execution', 'qm_reconnection'],
+                  'choose to print information of the scanning settings or do real scanning'),
+        Parameter('scan_center',
+                  [Parameter('x', 0.5, float, 'x-coordinate [V]'),
+                   Parameter('y', 0.5, float, 'y-coordinate [V]')
+                   ]),
+        Parameter('scan_direction',
+                  [Parameter('pt1',
+                             [Parameter('x', 0.0, float, 'x-coordinate [V]'),
+                              Parameter('y', 0.0, float, 'y-coordinate [V]')
+                              ]),
+                   Parameter('pt2',
+                             [Parameter('x', 1.0, float, 'x-coordinate [V]'),
+                              Parameter('y', 0.0, float, 'y-coordinate [V]')
+                              ]),
+                   Parameter('type', 'parallel', ['perpendicular', 'parallel'],
+                             'scan direction perpendicular or parallel to the pt1pt2 line')
+                   ]),
+        Parameter('scan_size',
+                  [Parameter('axis1', 1.0, float, 'inner loop [V]'),
+                   Parameter('axis2', 1.0, float, 'outer loop [V]')
+                   ]),
+        Parameter('resolution',
+                  [Parameter('axis1', 0.0001, [0.0001],
+                             '[V] inner loop, step size between scanning points. 0.0001V is roughly 0.5nm.'),
+                   Parameter('axis2', 0.1, float, '[V] outer loop, step size between lines. 0.1V is roughly 500nm.')
+                   ]),
+        Parameter('scan_speed', 0.04, [0.01, 0.02, 0.04, 0.06, 0.08, 0.1],
+                  '[V/s] scanning speed on average. suggest 0.04V/s, i.e. 200nm/s. Note that the jump between neighboring points is instantaneous. Scan_speed determines the time at each point.'),
+        Parameter('height', 'relative', ['relative', 'absolute'],
+                  'if relative: the first analog point will be reference.'),
+        Parameter('monitor_AFM', False, bool,
+                  'monitor the AFM Z_out voltage and retract the tip when the feedback loop is out of control'),
+        Parameter('laser_on', True, bool, 'turn on laser during scanning'),
+        Parameter('microwave', [
+            Parameter('mw_on', False, bool, 'turn on the microwave'),
+            Parameter('mw_frequency', 2.87e9, float, 'LO frequency in Hz'),
+            Parameter('mw_power', -20.0, float, 'RF power in dBm'),
+            Parameter('IF_frequency', 100e6, float, 'IF frequency in Hz from the QM'),
+            Parameter('IF_amp', 1.0, float, 'amplitude of the IF pulse, between 0 and 1'),
+        ]),
+        Parameter('moving_average_n', 20, int, 'moving average window size'),
+        Parameter('max_counts_plot', 100, int, 'Rescales colorbar with this as the maximum counts on replotting'),
+        Parameter('min_counts_plot', -1, int, 'Rescales colorbar with this as the maximum counts on replotting'),
+        Parameter('DAQ_channels',
+                  [Parameter('x_ao_channel', 'ao0', ['ao0', 'ao1', 'ao2', 'ao3', 'ao4', 'ao5', 'ao6', 'ao7'],
+                             'Daq channel used for x voltage analog output'),
+                   Parameter('y_ao_channel', 'ao1', ['ao0', 'ao1', 'ao2', 'ao3', 'ao4', 'ao5', 'ao6', 'ao7'],
+                             'Daq channel used for y voltage analog output'),
+                   Parameter('x_ai_channel', 'ai3',
+                             ['ai0', 'ai1', 'ai2', 'ai3', 'ai4', 'ai5', 'ai6', 'ai7', 'ai8', 'ai9', 'ai10', 'ai11',
+                              'ai12', 'ai13', 'ai14', 'ai14'],
+                             'Daq channel used for measuring x-scanner voltage'),
+                   Parameter('y_ai_channel', 'ai4',
+                             ['ai0', 'ai1', 'ai2', 'ai3', 'ai4', 'ai5', 'ai6', 'ai7', 'ai8', 'ai9', 'ai10', 'ai11',
+                              'ai12', 'ai13', 'ai14', 'ai14'],
+                             'Daq channel used for measuring y-scanner voltage'),
+                   Parameter('z_ai_channel', 'ai2',
+                             ['ai0', 'ai1', 'ai2', 'ai3', 'ai4', 'ai5', 'ai6', 'ai7', 'ai8', 'ai9', 'ai10', 'ai11',
+                              'ai12', 'ai13', 'ai14', 'ai14'],
+                             'Daq channel used for measuring z-scanner voltage'),
+                   Parameter('z_usb_ai_channel', 'ai1', ['ai0', 'ai1', 'ai2', 'ai3'],
+                             'Daq channel used for monitoring the z-scanner voltage'),
+                   Parameter('counter_channel', 'ctr0', ['ctr0', 'ctr1', 'ctr2', 'ctr3'],
+                             'Daq channel used for counter')
+                   ]),
+        Parameter('ending_behavior', 'leave_at_last', ['return_to_initial', 'return_to_origin', 'leave_at_last'],
+                  'select the ending behavior'),
+    ]
+    _INSTRUMENTS = {'NI6733': NI6733, 'NI6602': NI6602, 'NI6220': NI6220, 'NI6210': NI6210,
+                    'mw_gen_iq': SGS100ARFSource}
+    _SCRIPTS = {'SetScanner': SetScannerXY_gentle}
+
+    def __init__(self, instruments=None, scripts=None, name=None, settings=None, log_function=None, data_path=None):
+        '''
+        Initializes AFM2D script for use in gui
+        Args:
+            instruments: list of instrument objects
+            name: name to give to instantiated script object
+            settings: dictionary of new settings to pass in to override defaults
+            log_function: log function passed from the gui to direct log calls to the gui log
+            data_path: path to save data
+        '''
+        Script.__init__(self, name, settings=settings, instruments=instruments, scripts=scripts,
+                        log_function=log_function, data_path=data_path)
+
+        # defines which daqs contain the input and output based on user selection of daq interface
+        self.daq_in_DI = self.instruments['NI6602']['instance']
+        self.daq_in_AI = self.instruments['NI6220']['instance']
+        self.daq_out = self.instruments['NI6733']['instance']
+        self.daq_in_usbAI = self.instruments['NI6210']['instance']
+        self.qm_connect()
+
+    def qm_connect(self):
+        if self.settings['IP_address'] == 'automatic':
+            try:
+                self.qmm = QuantumMachinesManager()
+            except Exception as e:
+                print('** ATTENTION **')
+                print(e)
+        else:
+            try:
+                self.qmm = QuantumMachinesManager(host=self.settings['IP_address'])
+            except Exception as e:
+                print('** ATTENTION **')
+                print(e)
+
+    def turn_on_laser_mw(self):
+        try:
+            self.qm = self.qmm.open_qm(config)
+        except Exception as e:
+            print('** ATTENTION **')
+            print(e)
+        else:
+            if self.settings['microwave']['mw_on']:
+                IF_amp = self.settings['microwave']['IF_amp']
+                if IF_amp > 1.0:
+                    IF_amp = 1.0
+                elif IF_amp < 0.0:
+                    IF_amp = 0.0
+                with program() as laser_mw_on:
+                    update_frequency('qubit', self.settings['microwave']['IF_frequency'])
+                    with infinite_loop_():
+                        play('const' * amp(IF_amp), 'qubit', duration=3000)
+                        play('trig', 'laser', duration=3000)
+
+                self.instruments['mw_gen_iq']['instance'].update({'amplitude': self.settings['microwave']['mw_power']})
+                self.instruments['mw_gen_iq']['instance'].update(
+                    {'frequency': self.settings['microwave']['mw_frequency']})
+                self.instruments['mw_gen_iq']['instance'].update({'enable_IQ': True})
+                self.instruments['mw_gen_iq']['instance'].update({'ext_trigger': False})
+                self.instruments['mw_gen_iq']['instance'].update({'enable_output': True})
+                print('Turned on RF generator SGS100A (IQ on, no trigger).')
+
+                self.qm.execute(laser_mw_on)
+                print('Laser and mw are on.')
+
+            else:
+                with program() as laser_on:
+                    with infinite_loop_():
+                        play('trig', 'laser', duration=3000)
+
+                self.qm.execute(laser_on)
+                print('Laser is on.')
+
+    def turn_off_laser_mw(self):
+        try:
+            self.qm = self.qmm.open_qm(config)
+        except Exception as e:
+            print('** ATTENTION **')
+            print(e)
+        else:
+            with program() as job_stop:
+                play('trig', 'laser', duration=10)
+
+            self.qm.execute(job_stop)
+            print('Laser is off.')
+
+        self.instruments['mw_gen_iq']['instance'].update({'enable_output': False})
+        self.instruments['mw_gen_iq']['instance'].update({'enable_IQ': False})
+        self.instruments['mw_gen_iq']['instance'].update({'ext_trigger': False})
+        print('Turned off RF generator SGS100A (IQ off, trigger off).')
+
+    def _setup_anc(self):
+        self.anc_sample_connected = False
+        z_out = self.daq_in_usbAI.get_analog_voltages([self.settings['DAQ_channels']['z_usb_ai_channel']])
+        self.Z_scanner_last = z_out[0]
+
+        if self.settings['monitor_AFM']:
+            try:
+                self.anc_sample = Positioner()
+                self.anc_sample_connected = self.anc_sample.is_connected
+            except Exception as e:
+                print('** ATTENTION in creating ANC_sample **')
+                print(e)
+
+    def _check_AFM(self):
+        z_out = self.daq_in_usbAI.get_analog_voltages([self.settings['DAQ_channels']['z_usb_ai_channel']])
+        self.Z_scanner_now = z_out[0]
+        if np.abs(self.Z_scanner_now - self.Z_scanner_last) > 0.35:
+            try:
+                self.anc_sample.dcInEnable(5, False)
+                state = self.anc_sample.getDcInEnable(5)
+
+                print('** ATTENTION: AFM Fails!! **')
+                self.log('** ATTENTION: AFM Fails!! **')
+                print('Z scanner dcInEnable is ' + str(state))
+                self.log('Z scanner dcInEnable is ' + str(state))
+
+            except Exception as e:
+                print('** ATTENTION: AFM Fails!! **')
+                print('** But the tip CANNOT be Retracted!! **')
+                self.log('** ATTENTION: AFM Fails!! **')
+                self.log('** But the tip CANNOT be Retracted!! **')
+            self._abort = True
+
+        else:
+            self.Z_scanner_last = self.Z_scanner_now
+
+    def _function(self):
+        """
+            Executes threaded 1D sample scanning
+        """
+        # to prevent errors
+        self._setup_anc()
+
+        self.data = {}
+        self.line_index = 0
+
+        self._get_scan_extent()
+        T_tot = self.settings['scan_size']['axis1'] / self.settings['scan_speed']
+        ptspervolt = float(1) / self.settings['resolution']['axis1']
+        N = int(np.ceil(self.settings['scan_size']['axis1'] * ptspervolt / 2) * 2)  # number of samples per line
+        N -= 1
+        dt = T_tot / N
+        refresh_N = self._find_refresh_N(dt, N)
+
+        # for the outer loop
+        ptspervolt2 = float(1) / self.settings['resolution']['axis2']
+        N2 = int(np.ceil(self.settings['scan_size']['axis2'] * ptspervolt2 / 2) * 2)  # number of lines
+        # N2 -= 1
+        self.N2 = N2
+        print('     Number of lines: {}. Line resolution: {:.3f}V ({:.1f}nm).'.format(N2, self.settings['resolution'][
+            'axis2'], self.settings['resolution']['axis2'] * 5000))
+
+        Total_ETA = 2. * T_tot * N2 / 3600.
+        print('The AFM scan will take ETA = {:.3f} hour.'.format(Total_ETA))
+
+        if self.settings['to_do'] == 'print_info':
+            print('No scanning started.')
+
+        elif self.settings['monitor_AFM'] and not self.anc_sample_connected:
+            print('** Attention ** ANC350 v2 (sample) is not connected. No scanning started.')
+            self._abort = True
+
+        elif self.settings['to_do'] == 'qm_reconnection':
+            self.qm_connect()
+
+        elif np.max([self.pta, self.ptb, self.ptc, self.ptd]) <= 8 and np.min(
+                [self.pta, self.ptb, self.ptc, self.ptd]) >= 0:
+            self.scripts['SetScanner'].update({'to_do': 'set'})
+            self.scripts['SetScanner'].update({'scan_speed': self.settings['scan_speed']})
+            self.scripts['SetScanner'].update({'step_size': self.settings['resolution']['axis1']})
+
+            # turn on laser
+            if self.settings['laser_on']:
+                self.turn_on_laser_mw()
+
+            # Get initial positions
+            self.varinitialpos = self.daq_in_AI.get_analog_voltages([
+                self.settings['DAQ_channels']['x_ai_channel'],
+                self.settings['DAQ_channels']['y_ai_channel']]
+            )
+            print('Initial position: Vx={:.3}V, Vy={:.3}V'.format(self.varinitialpos[0], self.varinitialpos[1]))
+            # self.log('Initial position: Vx={:.3}V, Vy={:.3}V'.format(self.varinitialpos[0], self.varinitialpos[1]))
+
+            # Set proper sample rates for all the DAQ channels
+            self.sample_rate = N / T_tot
+            self.daq_out.settings['analog_output'][
+                self.settings['DAQ_channels']['x_ao_channel']]['sample_rate'] = self.sample_rate
+            self.daq_out.settings['analog_output'][
+                self.settings['DAQ_channels']['y_ao_channel']]['sample_rate'] = self.sample_rate
+            self.daq_in_DI.settings['digital_input'][
+                self.settings['DAQ_channels']['counter_channel']]['sample_rate'] = self.sample_rate
+            self.daq_in_AI.settings['analog_input'][
+                self.settings['DAQ_channels']['x_ai_channel']]['sample_rate'] = self.sample_rate
+            self.daq_in_AI.settings['analog_input'][
+                self.settings['DAQ_channels']['y_ai_channel']]['sample_rate'] = self.sample_rate
+            self.daq_in_AI.settings['analog_input'][
+                self.settings['DAQ_channels']['z_ai_channel']]['sample_rate'] = self.sample_rate
+
+            # refresh_N = self.settings['refresh_per_N_pt']
+            # scanner move to self.pta
+            self.scripts['SetScanner'].settings['point']['x'] = self.pta[0]
+            self.scripts['SetScanner'].settings['point']['y'] = self.pta[1]
+            self.scripts['SetScanner'].run()
+
+            self.line_index = -1
+            self.current_round = 0  # odd means forward scan, even means backward scan
+
+            self.data = {'data_ctr_for': np.zeros([N2, N]), 'data_analog_for': np.zeros([N2, N]),
+                         'data_ctr_back': np.zeros([N2, N]),
+                         'data_analog_back': np.zeros([N2, N])}
+            # 'rotated_data_ctr': ndimage.rotate(np.zeros([N2, N]), self.rotation_angle),
+            # 'rotated_data_analog': ndimage.rotate(np.zeros([N2, N]), self.rotation_angle)}
+
+            # If the inner and outer loops have different resolutions, the following will be difficult
+
+            self.data['scan_center'] = self.scan_center
+            self.data['scan_size_1'] = self.settings['scan_size']['axis1']
+            self.data['scan_size_2'] = self.settings['scan_size']['axis2']
+            self.data['vector_x'] = self.vector_x
+
+            print('***************************')
+            print('***** AFM Scan Starts *****')
+            print('***************************')
+            self.current_index = 0
+
+            self.data['ref_analog'] = 0
+
+            tik = time.time()
+            while True:
+                time.sleep(0.1)
+                if self.current_round % 2 == 0:
+                    self.line_index += 1
+
+                if self.line_index >= N2:  # if the maximum time is hit
+                    break
+                if self._abort:
+                    break
+
+                self.current_round += 1
+
+                if self.current_round % 2 == 1:  # odd, forward scan
+                    print('--> Line index: {} / {}. Forward scan. ETA={:.1f}s.'.format(self.line_index, N2, T_tot))
+                    Vstart = self.pta + self.settings['resolution']['axis2'] * self.vector_y * self.line_index
+                    Vend = self.ptb + self.settings['resolution']['axis2'] * self.vector_y * self.line_index
+                else:  # even, backward scan
+                    print('--> Line index: {} / {}. Backward scan. ETA={:.1f}s.'.format(self.line_index, N2, T_tot))
+                    Vstart = self.ptb + self.settings['resolution']['axis2'] * self.vector_y * self.line_index
+                    Vend = self.pta + self.settings['resolution']['axis2'] * self.vector_y * self.line_index
+
+                self.scripts['SetScanner'].settings['point']['x'] = Vstart[0]
+                self.scripts['SetScanner'].settings['point']['y'] = Vstart[1]
+                self.scripts['SetScanner'].run()
+
+                scan_pos_1d = np.transpose(np.linspace(Vstart, Vend, N, endpoint=True))
+
+
+                # Setup DAQ
+                ctrtask = self.daq_in_DI.setup_counter(self.settings['DAQ_channels']['counter_channel'], refresh_N,
+                                                       continuous_acquisition=True)
+                aotask = self.daq_out.setup_AO(
+                    [self.settings['DAQ_channels']['x_ao_channel'], self.settings['DAQ_channels']['y_ao_channel']],
+                    scan_pos_1d, ctrtask)
+                aitask = self.daq_in_AI.setup_AI(self.settings['DAQ_channels']['z_ai_channel'],
+                                                 refresh_N, continuous=True, clk_source=ctrtask)
+                self.daq_out.run(aotask)
+                self.daq_in_AI.run(aitask)
+                self.daq_in_DI.run(ctrtask)
+
+                # Start 1D scan
+                self.current_index = 0
+                self.last_value = 0
+                normalization = dt / .001  # convert to kcounts/sec
+
+                while True:
+
+                    self.progress = (self.current_round * N + self.current_index) * 100. / (2. * N * N2)
+                    self.updateProgress.emit(int(self.progress))
+
+                    pt_ETA = refresh_N * self.settings['resolution']['axis1'] / self.settings['scan_speed']
+                    print('     Point index: {} / {}. ETA = {:.1f}s'.format(self.current_index, N, pt_ETA))
+                    if self.current_index >= N:  # if the maximum time is hit
+                        # self._abort = True  # tell the script to abort
+                        break
+                    if self._abort:
+                        break
+
+                    raw_data_analog, num_read_analog = self.daq_in_AI.read(aitask)
+                    raw_data_ctr, num_read_ctr = self.daq_in_DI.read(ctrtask)
+
+
+                    if self.current_index == 0:
+                        if self.current_round == 1 and self.settings['height'] == 'relative':
+                            self.data['ref_analog'] = raw_data_analog[1]
+                        # throw the first data point
+                        raw_data_analog = raw_data_analog[1:]
+
+                    raw_data_analog = np.array(raw_data_analog) - self.data['ref_analog']
+
+                    if self.current_round % 2 == 1:  # forward scan
+                        # store analog data
+                        if self.current_index + len(raw_data_analog) < N:
+                            self.data['data_analog_for'][self.line_index][
+                            self.current_index:self.current_index + len(raw_data_analog)] = raw_data_analog
+                        else:
+                            self.data['data_analog_for'][self.line_index][
+                            self.current_index:self.current_index + len(raw_data_analog)] = raw_data_analog[
+                                                                                            0:N - self.current_index]
+                        # store counter data
+                        for value in raw_data_ctr:
+
+                            if self.current_index >= N:
+                                break
+                            new_val = ((float(value) - self.last_value) / normalization)
+                            if self.last_value != 0:
+                                self.data['data_ctr_for'][self.line_index][self.current_index] = new_val
+                                self.current_index += 1
+
+                            self.last_value = value
+
+                    else:  # backward scan
+                        # store analog data
+                        if self.current_index + len(raw_data_analog) < N:
+                            self.data['data_analog_back'][self.line_index][
+                            N - self.current_index - len(raw_data_analog): N - self.current_index] = np.flip(
+                                raw_data_analog)
+                        else:
+                            self.data['data_analog_back'][self.line_index][0:N - self.current_index] = np.flip(
+                                raw_data_analog[0:N - self.current_index])
+
+                        # store counter data
+                        for value in raw_data_ctr:
+                            # print('self.last_value', self.last_value)
+                            if self.current_index >= N:
+                                break
+                            new_val = ((float(value) - self.last_value) / normalization)
+                            if self.last_value != 0:
+                                self.data['data_ctr_back'][self.line_index][N - self.current_index - 1] = new_val
+                                self.current_index += 1
+                            # print('new_val', new_val)
+                            self.last_value = value
+                self.daq_out.stop(ctrtask)
+                self.daq_out.stop(aitask)
+                self.daq_out.stop(aotask)
+            tok = time.time()
+            print('Actual scanning time: {:.1f}s.'.format(tok - tik))
+
+            # Return the scanner to certain positions
+            if self.settings['ending_behavior'] == 'return_to_initial':
+                self.scripts['SetScanner'].settings['point']['x'] = self.varinitialpos[0]
+                self.scripts['SetScanner'].settings['point']['y'] = self.varinitialpos[0]
+                self.scripts['SetScanner'].run()
+                print('Sample scanner returned to the initial position.')
+            elif self.settings['ending_behavior'] == 'return_to_origin':
+                self.scripts['SetScanner'].settings['point']['x'] = 0.0
+                self.scripts['SetScanner'].settings['point']['y'] = 0.0
+                self.scripts['SetScanner'].run()
+                print('Sample scanner returned to the origin.')
+            else:
+                print('Sample scanner is left at the last point.')
+
+            current_position = self.daq_in_AI.get_analog_voltages([
+                self.settings['DAQ_channels']['x_ai_channel'],
+                self.settings['DAQ_channels']['y_ai_channel']]
+            )
+            print('Scanner: Vx={:.4}V, Vy={:.4}V'.format(current_position[0], current_position[1]))
+            self.log('Scanner: Vx={:.4}V, Vy={:.4}V'.format(current_position[0], current_position[1]))
+
+            # turn off laser
+            self.turn_off_laser_mw()
+
+            # self.data['rotated_data_ctr'] = ndimage.rotate(self.data['data_ctr_for'], self.rotation_angle)
+            # self.data['rotated_data_analog'] = ndimage.rotate(self.data['data_analog_for'], self.rotation_angle)
+
+        else:
+            print('**ATTENTION**: Scanning voltage exceeds limit [0 8]. No action.')
+            self.log('**ATTENTION**: Scanning voltage exceeds limit [0 8]. No action.')
+
+        if self.anc_sample_connected:
+            try:
+                self.anc_sample.close()
+                print('ANC350 v2 (sample) is closed.')
+                self.log('ANC350 v2 (sample) is closed.')
+            except Exception as e:
+                print('** ATTENTION: ANC350 v2 (sample) CANNOT be closed. **')
+                self.log('** ATTENTION: ANC350 v2 (sample) CANNOT be closed. **')
+
+    def is_at_point(self, pt, daq_read_error=0.01):
+        current_position = self.daq_in_AI.get_analog_voltages([
+            self.settings['DAQ_channels']['x_ai_channel'],
+            self.settings['DAQ_channels']['y_ai_channel']]
+        )
+        if np.abs(current_position[0] - pt[0]) < daq_read_error and np.abs(
+                current_position[1] - pt[1]) < daq_read_error:
+            return True
+        else:
+            return False
+
+    def _get_scan_extent(self, verbose=True):
+        """
+        Define 4 points and two unit vectors.
+        self.pta - first point to scan, self.ptb- last point of first line,
+        self.ptc - first point of last line, self.ptd - last point of last line
+        self.vector_x - scanning direction vector, self.vector_y - orthorgonl direction
+        """
+        pt1 = np.array([self.settings['scan_direction']['pt1']['x'], self.settings['scan_direction']['pt1']['y']])
+        pt2 = np.array([self.settings['scan_direction']['pt2']['x'], self.settings['scan_direction']['pt2']['y']])
+        if (pt1 == pt2)[0] == True and (pt1 == pt2)[1] == True:
+            print('**ATTENTION** pt1 and pt2 are the same. Please define a valid scan direction. No action.')
+            self._abort = True
+        vector_1to2 = self._to_unit_vector(pt1, pt2)
+
+        if self.settings['scan_direction']['type'] == 'parallel':
+            self.vector_x = vector_1to2
+            self.vector_y = self._get_ortho_vector(self.vector_x)
+        else:
+            self.vector_y = vector_1to2
+            self.vector_x = self._get_ortho_vector(-self.vector_y)
+
+        self.rotation_angle = math.acos(np.dot(self.vector_x, np.array([1, 0]))) / np.pi * 180
+        if self.vector_x[1] > 0:
+            self.rotation_angle = -self.rotation_angle
+
+        if verbose:
+            print('Scanning details:')
+            print('     vector_x (inner loop):', self.vector_x)
+            print('     vector_y (outer loop):', self.vector_y)
+            print('     rotation_angle:', self.rotation_angle)
+
+        self.scan_center = np.array([self.settings['scan_center']['x'], self.settings['scan_center']['y']])
+        scan_size_1 = self.settings['scan_size']['axis1']  # inner loop
+        scan_size_2 = self.settings['scan_size']['axis2']  # outer loop
+
+        # define the 4 points
+        self.pta = self.scan_center - self.vector_x * scan_size_1 / 2. - self.vector_y * scan_size_2 / 2.
+        self.ptb = self.scan_center + self.vector_x * scan_size_1 / 2. - self.vector_y * scan_size_2 / 2.
+        self.ptc = self.scan_center - self.vector_x * scan_size_1 / 2. + self.vector_y * scan_size_2 / 2.
+        self.ptd = self.scan_center + self.vector_x * scan_size_1 / 2. + self.vector_y * scan_size_2 / 2.
+
+        if verbose:
+            print('     self.pta (first point of first line):', self.pta)
+            print('     self.ptb (last point of first line):', self.ptb)
+            print('     self.ptc (first point of last line):', self.ptc)
+            print('     self.ptd (last point of last line):', self.ptd)
+
+    def _to_unit_vector(self, pt1, pt2):
+        unit_vector = (pt2 - pt1) / np.linalg.norm(pt2 - pt1)
+        return unit_vector
+
+    def _get_ortho_vector(self, vector):
+        ortho_vector = np.array([-vector[1], vector[0]])
+        return ortho_vector
+
+    def _find_refresh_N(self, dt, N, verbose=True):
+        refresh_N = 4
+        while True:
+            if refresh_N >= N:
+                refresh_N = int(np.min([N + 1, int(8 / dt)]))
+                break
+            if ((N + 1 + refresh_N) % refresh_N == 0 or (
+                    N + 1 + refresh_N) % refresh_N >= 0.66 * refresh_N) and 4 <= dt * refresh_N <= 15:
+                break
+            else:
+                refresh_N += 1
+        if verbose:
+            # print('     type of refresh N', type(refresh_N))
+            print(
+                '     In each line, dt={:.3f}s, N={:d}, resolution={:.5f}V ({:.1f}nm). Plot refresh per {:d} points.'.format(
+                    dt, N,
+                    self.settings[
+                        'resolution'][
+                        'axis1'], self.settings[
+                                      'resolution'][
+                                      'axis1'] * 5000,
+                    refresh_N))
+        return refresh_N
+
+    def plot(self, figure_list):
+        super(AFM2D_MW, self).plot([figure_list[0], figure_list[1]])
+
+    def _plot(self, axes_list, data=None):
+        """
+            Plots the confocal scan image
+            Args:
+                axes_list: list of axes objects on which to plot the galvo scan on the first axes object
+                data: data (dictionary that contains keys image_data, extent) if not provided use self.data
+        """
+        if data is None:
+            data = self.data
+
+        def smooth(a, n=self.settings['moving_average_n']):
+            ret = np.cumsum(a, axis=1, dtype=float)
+            ret[:,n:] = (ret[:,n:] - ret[:,:-n])/n
+            return ret
+
+        if 'data_ctr_for' in data.keys():
+            plot_fluorescence_new(smooth(data['data_ctr_for']),
+                                  [0, self.settings['scan_size']['axis1'], self.settings['scan_size']['axis2'], 0],
+                                  axes_list[0], max_counts=self.settings['max_counts_plot'], aspect='equal',
+                                  min_counts=self.settings['min_counts_plot'],
+                                  axes_labels=['1', '2'],
+                                  title='Counts (forward)')
+        if 'data_ctr_back' in data.keys():
+            plot_fluorescence_new(smooth(data['data_ctr_back']),
+                                  [0, self.settings['scan_size']['axis1'], self.settings['scan_size']['axis2'], 0],
+                                  axes_list[1], max_counts=self.settings['max_counts_plot'], aspect='equal',
+                                  min_counts=self.settings['min_counts_plot'],
+                                  axes_labels=['1', '2'],
+                                  title='Counts (backward)')
+        if 'data_analog_for' in data.keys():
+            plot_fluorescence_new(data['data_analog_for'],
+                                  [0, self.settings['scan_size']['axis1'], self.settings['scan_size']['axis2'], 0],
+                                  axes_list[2],
+                                  axes_labels=['1', '2'], aspect='equal', title='Height (forward)',
+                                  colorbar_name='Z [V]')
+
+        if 'data_analog_back' in data.keys():
+            plot_fluorescence_new(data['data_analog_back'],
+                                  [0, self.settings['scan_size']['axis1'], self.settings['scan_size']['axis2'], 0],
+                                  axes_list[3], axes_labels=['1', '2'], aspect='equal', title='Height (backward)',
+                                  colorbar_name='Z [V]')
+
+        try:
+            def smooth1d(a, n=self.settings['moving_average_n']):
+                ret = np.cumsum(a, dtype=float)
+                ret[n:] = ret[n:] - ret[:-n]
+                return ret[n - 1:] / n
+            num_of_pts = len(data['data_ctr_for'][-1])
+            axes_list[4].plot(np.linspace(0, data['scan_size_1'], num_of_pts-self.settings['moving_average_n']+1),
+                              smooth1d(data['data_ctr_for'][-1]),
+                              label='forward')
+            axes_list[4].plot(np.linspace(0, data['scan_size_1'], num_of_pts-self.settings['moving_average_n']+1),
+                              smooth1d(data['data_ctr_back'][-1]), '--',
+                              label='backward')
+            axes_list[4].set_xlabel('Scanning position')
+            axes_list[4].set_ylabel('counts [kcps]')
+            axes_list[4].legend(fontsize=9, loc = 'upper right')
+
+            axes_list[5].plot(np.linspace(0, data['scan_size_1'], num_of_pts), data['data_analog_for'][-1],
+                              label='forward')
+            axes_list[5].plot(np.linspace(0, data['scan_size_1'], num_of_pts), data['data_analog_back'][-1], '--',
+                              label='backward')
+            axes_list[5].set_xlabel('Scanning position')
+            axes_list[5].set_ylabel('Z_out [V]')
+            axes_list[5].legend(fontsize=9, loc = 'upper right')
+        except Exception as e:
+            print('** ATTENTION **')
+            print(e)
+
+
+
+    def _update_plot(self, axes_list, monitor_AFM=True):
+        if monitor_AFM and self.anc_sample_connected:
+            self._check_AFM()
+
+        try:
+            def smooth(a, n=self.settings['moving_average_n']):
+                ret = np.cumsum(a, axis=1, dtype=float)
+                ret[:,n:] = (ret[:,n:] - ret[:,:-n]) / n
+                return ret
+            update_fluorescence(smooth(self.data['data_ctr_for']), axes_list[0], max_counts=self.settings['max_counts_plot'],
+                                min_counts=self.settings['min_counts_plot'])
+            update_fluorescence(smooth(self.data['data_ctr_back']), axes_list[1], max_counts=self.settings['max_counts_plot'],
+                                min_counts=self.settings['min_counts_plot'])
+            update_fluorescence(self.data['data_analog_for'], axes_list[2])
+            update_fluorescence(self.data['data_analog_back'], axes_list[3])
+
+            def smooth1d(a, n=self.settings['moving_average_n']):
+                ret = np.cumsum(a, dtype=float)
+                ret[n:] = ret[n:] - ret[:-n]
+                return ret[n - 1:] / n
+            axes_list[4].lines[0].set_ydata(smooth1d(self.data['data_ctr_for'][self.line_index]))
+            axes_list[4].lines[1].set_ydata(smooth1d(self.data['data_ctr_back'][self.line_index]))
+            axes_list[4].relim()
+            axes_list[4].autoscale_view()
+            axes_list[4].set_title('Current Line: {} / {}'.format(self.line_index, self.N2), fontsize=9.5)
+
+            axes_list[5].lines[0].set_ydata(self.data['data_analog_for'][self.line_index])
+            axes_list[5].lines[1].set_ydata(self.data['data_analog_back'][self.line_index])
+            axes_list[5].relim()
+            axes_list[5].autoscale_view()
+            axes_list[5].set_title('Current Line: {} / {}'.format(self.line_index, self.N2), fontsize=9.5)
+        except Exception as e:
+            print('** ATTENTION **')
+            print(e)
+            self._plot(axes_list)
+
+    def get_axes_layout(self, figure_list):
+        """
+            returns the axes objects the script needs to plot its data
+            this overwrites the default get_axis_layout in PyLabControl.src.core.scripts
+            Args:
+                figure_list: a list of figure objects
+            Returns:
+                axes_list: a list of axes objects
+
+        """
+        axes_list = []
+        if self._plot_refresh is True:
+            for fig in figure_list:
+                fig.clf()
+            axes_list.append(figure_list[0].add_subplot(221))  # axes_list[0]
+            axes_list.append(figure_list[0].add_subplot(222))  # axes_list[1]
+            axes_list.append(figure_list[0].add_subplot(223))  # axes_list[2]
+            axes_list.append(figure_list[0].add_subplot(224))  # axes_list[3]
+            axes_list.append(figure_list[1].add_subplot(121))  # axes_list[4]
+            axes_list.append(figure_list[1].add_subplot(122))  # axes_list[5]
+
+        else:
+            axes_list.append(figure_list[0].axes[0])
+            axes_list.append(figure_list[0].axes[1])
+            axes_list.append(figure_list[0].axes[2])
+            axes_list.append(figure_list[0].axes[3])
+            axes_list.append(figure_list[1].axes[0])
+            axes_list.append(figure_list[1].axes[1])
+        return axes_list
+
+
+
+    
 
 if __name__ == '__main__':
     script, failed, instruments = Script.load_and_append(script_dict={'ObjectiveScan': 'ObjectiveScan'})

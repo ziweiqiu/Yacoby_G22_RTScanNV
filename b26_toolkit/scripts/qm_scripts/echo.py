@@ -3889,7 +3889,6 @@ class AC_AGate_SingleTau(Script):
 
                 # define the qua program
                 with program() as acsensing:
-
                     update_frequency('qubit', IF_freq)
                     result1 = declare(int, size=res_len)
                     counts1 = declare(int, value=0)

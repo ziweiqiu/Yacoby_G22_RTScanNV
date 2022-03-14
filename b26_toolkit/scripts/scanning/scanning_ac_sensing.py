@@ -12,10 +12,10 @@ from b26_toolkit.instruments import NI6733, NI6220, NI6210
 
 import smtplib, ssl
 
-receiver_email = "ziweiqiu@g.harvard.edu"
+receiver_email = ""
 def send_email(receiver_email, message):
     port = 465  # For SSL
-    password = "diamond2020"
+    password = ""
     sender_email = "nv.scanning.alert@gmail.com"
     # Create a secure SSL context
     context = ssl.create_default_context()
@@ -331,7 +331,8 @@ class ScanningACSensing(Script):
     ]
     _INSTRUMENTS = {'NI6733': NI6733, 'NI6220': NI6220, 'NI6210': NI6210}
     _SCRIPTS = {'ac_sensing_digital': AC_DGate_SingleTau, 'ac_sensing_analog': AC_AGate_SingleTau, 'rabi': RabiQM,
-                'optimize': optimize, 'set_scanner': SetScannerXY_gentle, 'afm1d': AFM1D_qm, 'afm1d_before_after': AFM1D_qm}
+                'optimize': optimize, 'set_scanner': SetScannerXY_gentle, 'afm1d': AFM1D_qm,
+                'afm1d_before_after': AFM1D_qm}
 
     def __init__(self, instruments=None, scripts=None, name=None, settings=None, log_function=None, data_path=None):
         """
@@ -399,18 +400,6 @@ class ScanningACSensing(Script):
                 [self.settings['DAQ_channels']['x_ai_channel'], self.settings['DAQ_channels']['y_ai_channel'],
                  self.settings['DAQ_channels']['z_ai_channel']])
 
-            # if np.abs(pos_after[0]- pos_before[0]) > self.settings['do_optimize']['range_xy']:
-            #     self.daq_out.set_analog_voltages(
-            #         {self.settings['DAQ_channels']['x_ao_channel']: pos_before[0]})
-            #     print('---> Optimize X does not make sense. Set laser X back.')
-            # if np.abs(pos_after[1] - pos_before[1]) > self.settings['do_optimize']['range_xy']:
-            #     self.daq_out.set_analog_voltages(
-            #         {self.settings['DAQ_channels']['y_ao_channel']: pos_before[1]})
-            #     print('---> Optimize Y does not make sense. Set laser Y back.')
-            # if np.abs(pos_after[2] - pos_before[2]) > self.settings['do_optimize']['range_z']:
-            #     self.daq_out.set_analog_voltages(
-            #         {self.settings['DAQ_channels']['z_ao_channel']: pos_before[2]})
-            #     print('---> Optimize Z does not make sense. Set laser Z back.')
             if np.abs(pos_after[0] - pos_before[0]) > self.settings['do_optimize']['range_xy'] or np.abs(
                     pos_after[1] - pos_before[1]) > self.settings['do_optimize']['range_xy'] or np.abs(
                     pos_after[2] - pos_before[2]) > self.settings['do_optimize']['range_z']:
@@ -772,12 +761,6 @@ Attention! AFM just failed BUT the tip CANNOT be retracted. Please take action!"
         axes_list[4].set_ylabel('Rabi freq. [MHz]')
         axes_list[5].set_ylabel('RF power [dB]')
         axes_list[7].set_ylabel('Phase [rad]')
-
-        # axes_list[0].xaxis.set_visible(False)
-        # axes_list[1].xaxis.set_visible(False)
-        # axes_list[2].xaxis.set_visible(False)
-        # axes_list[4].xaxis.set_visible(False)
-        # axes_list[5].xaxis.set_visible(False)
 
         axes_list[0].xaxis.set_ticklabels([])
         axes_list[1].xaxis.set_ticklabels([])

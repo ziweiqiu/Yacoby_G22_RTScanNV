@@ -194,7 +194,8 @@ def update_magnet_sweep2D_Fluor(image_data, axes_image, max_counts=-1, min_count
 
 
 def plot_fluorescence_new(image_data, extent, axes_image, aspect='auto', max_counts=-1, min_counts=-1, colorbar=None,
-                          axes_labels=None, axes_not_voltage=False, title='Confocal Image', colorbar_name='kcps', axis_off=False):
+                          axes_labels=None, axes_not_voltage=False, title='Confocal Image', colorbar_name='kcps',
+                          axis_off=False, rotation = 90, cmap = 'pink', colorbar_labels = None):
     """
     plots fluorescence data in a 2D plot
     Args:
@@ -223,7 +224,9 @@ def plot_fluorescence_new(image_data, extent, axes_image, aspect='auto', max_cou
 
     axes_image.clear()
 
-    implot = axes_image.imshow(image_data, cmap='pink', interpolation="nearest", extent=extent, aspect=aspect)
+
+    implot = axes_image.imshow(image_data, cmap=cmap, interpolation="nearest", extent=extent, aspect=aspect)
+    # implot = axes_image.imshow(smooth(image_data), cmap='pink', interpolation="nearest", extent=extent, aspect=aspect)
 
     if axes_labels is None:
         x_label = 'x'
@@ -247,7 +250,7 @@ def plot_fluorescence_new(image_data, extent, axes_image, aspect='auto', max_cou
         axes_image.set_axis_off()
     # explicitly round x_ticks because otherwise they have too much precision (~17 decimal points) when displayed
     # on plot
-    axes_image.set_xticklabels([round(xticklabel, 4) for xticklabel in axes_image.get_xticks()], rotation=90)
+    axes_image.set_xticklabels([round(xticklabel, 4) for xticklabel in axes_image.get_xticks()], rotation=rotation)
 
     if min_counts < 0:
         # if np.min(image_data)<200:
@@ -265,32 +268,20 @@ def plot_fluorescence_new(image_data, extent, axes_image, aspect='auto', max_cou
     else:
         colorbar_max = max_counts
 
-    if colorbar_max > 1:
-        colorbar_labels = [np.floor(x) for x in np.linspace(colorbar_min, colorbar_max, 5, endpoint=True)]
-    else:
-        colorbar_labels = [0.1 * np.floor(10 * x) for x in np.linspace(colorbar_min, colorbar_max, 5, endpoint=True)]
+    if colorbar_labels is None:
+        if colorbar_max > 1:
+            colorbar_labels = [np.floor(x) for x in np.linspace(colorbar_min, colorbar_max, 5, endpoint=True)]
+        else:
+            colorbar_labels = np.unique([0.1 * np.floor(10 * x) for x in np.linspace(colorbar_min*0.8, colorbar_max, 5, endpoint=True)])
+            colorbar_labels = list(colorbar_labels)
 
     if max_counts <= 0 and min_counts <= 0:
         implot.autoscale()
 
-    # if colorbar is None:
-    #     colorbar = fig.colorbar(implot, label='kcounts/sec')
-    #     colorbar.set_ticks(colorbar_labels)
-    #     colorbar.set_clim(colorbar_min, colorbar_max)
-    # else:
-    #     colorbar = fig.colorbar(implot, cax=colorbar.ax, label='kcounts/sec')
-    #     colorbar.set_ticks(colorbar_labels)
-    #     colorbar.set_clim(colorbar_min, colorbar_max)
 
     if colorbar is None:
         divider = make_axes_locatable(axes_image)
         cax = divider.append_axes('right', size='3%', pad=0.05)
-
-        # colorbar = fig.colorbar(implot, label='kcounts/sec')
-        # colorbar.set_ticks(colorbar_labels)
-        # #colorbar.set_clim(colorbar_min, colorbar_max)
-        # colorbar.mappable.set_clim(colorbar_min, colorbar_max)
-
         colorbar = fig.colorbar(implot, cax=cax, orientation='vertical')
         colorbar.set_label(colorbar_name, labelpad=-10, y=1.12, rotation=0)
         colorbar.set_ticks(colorbar_labels)
@@ -298,7 +289,7 @@ def plot_fluorescence_new(image_data, extent, axes_image, aspect='auto', max_cou
         colorbar.update_normal(implot)
 
 
-def update_fluorescence(image_data, axes_image, max_counts=-1, min_counts=-1):
+def update_fluorescence(image_data, axes_image, max_counts=-1, min_counts=-1, colorbar_labels = None):
     """
     updates a the data in a fluorescence  plot. This is more efficient than replotting from scratch
     Args:
@@ -308,10 +299,6 @@ def update_fluorescence(image_data, axes_image, max_counts=-1, min_counts=-1):
     Returns:
 
     """
-
-    # if max_counts >= 0:
-    #     image_data = np.clip(image_data, 0, max_counts)
-
     if max_counts >= 0:
         if min_counts >= 0:
             image_data = np.clip(image_data, min_counts, max_counts)
@@ -324,7 +311,6 @@ def update_fluorescence(image_data, axes_image, max_counts=-1, min_counts=-1):
     implot.autoscale()
 
     if colorbar is not None:
-        # colorbar_min = 0
         if max_counts < 0:
             colorbar_max = np.max(image_data)
         else:
@@ -332,15 +318,16 @@ def update_fluorescence(image_data, axes_image, max_counts=-1, min_counts=-1):
 
         if min_counts < 0:
             colorbar_min = np.min(image_data)
-            # colorbar_min = np.min(image_data[np.nonzero(image_data)])
         else:
             colorbar_min = min_counts
 
-        if colorbar_max > 1:
-            colorbar_labels = [np.floor(x) for x in np.linspace(colorbar_min, colorbar_max, 5, endpoint=True)]
-        else:
-            colorbar_labels = [0.1 * np.floor(10 * x) for x in
-                               np.linspace(colorbar_min, colorbar_max, 5, endpoint=True)]
+        if colorbar_labels is None:
+            if colorbar_max > 1:
+                colorbar_labels = [np.floor(x) for x in np.linspace(colorbar_min, colorbar_max, 5, endpoint=True)]
+            else:
+                colorbar_labels = np.unique(
+                    [0.1 * np.floor(10 * x) for x in np.linspace(colorbar_min*0.8, colorbar_max, 5, endpoint=True)])
+                colorbar_labels = list(colorbar_labels)
 
         colorbar.set_ticks(colorbar_labels)
         # colorbar.set_clim(colorbar_min, colorbar_max)

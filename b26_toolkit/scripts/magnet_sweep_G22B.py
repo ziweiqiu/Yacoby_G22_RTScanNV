@@ -6,7 +6,7 @@ from b26_toolkit.instruments import MagnetX, MagnetY, MagnetZ
 from b26_toolkit.scripts.find_nv import FindNV
 from b26_toolkit.scripts.set_laser import SetObjectiveXY
 from b26_toolkit.scripts.qm_scripts.counter_time_trace import CounterTimeTrace
-from b26_toolkit.scripts.qm_scripts.basic import ESRQM_FitGuaranteed, RabiQM
+from b26_toolkit.scripts.qm_scripts.basic import ESRQM_FitGuaranteed, RabiQM, MultiESR
 from b26_toolkit.scripts.qm_scripts.echo import PDDQM, PDDSingleTau
 
 from b26_toolkit.scripts.optimize import optimize
@@ -1373,4 +1373,310 @@ class FineTuneMagAngle(Script):
             axes_list.append(figure_list[0].axes[1])
             axes_list.append(figure_list[1].axes[0])
 
+        return axes_list
+
+
+class MagnetScanMultiESR(Script):
+    _DEFAULT_SETTINGS = [
+        Parameter('to-do', 'read', ['initialize', 'move', 'sweep', 'read'],
+                  'Choose to move to a point, do a magnet sweep or just read the magnet positions'),
+        Parameter('servo_initial',
+                  [Parameter('initialize', True, bool,
+                             'whether or not to intialize the servo position before sweeping? (highly recommended)'),
+                   Parameter('Xservo', 0, float, 'initial position of Xservo'),
+                   Parameter('Yservo', 0, float, 'initial position of Yservo'),
+                   Parameter('Zservo', -5.0, float, 'initial position of Zservo'),
+                   Parameter('Xservo_min', -12.5, float, 'minimum allowed position of Xservo'),
+                   Parameter('Xservo_max', 12.5, float, 'maximum allowed position of Xservo'),
+                   Parameter('Yservo_min', -12.5, float, 'minimum allowed position of Yservo'),
+                   Parameter('Yservo_max', 12.5, float, 'maximum allowed position of Yservo'),
+                   Parameter('Zservo_min', -11, float, 'minimum allowed position of Zservo'),
+                   Parameter('Zservo_max', 4.5, float, 'maximum allowed position of Zservo'),
+                   ]),
+        Parameter('scan_axis', 'x', ['x', 'y', 'z'],
+                  'Choose which axis to perform 1D magnet sweep'),
+        Parameter('move_to',
+                  [Parameter('x', -6.6, float, 'move to x-coordinate [mm]'),
+                   Parameter('y', 0, float, 'move to y-coordinate [mm]'),
+                   Parameter('z', -5, float, 'move to z-coordinate [mm]')
+                   ]),
+        Parameter('sweep_center',
+                  [Parameter('x', 0.0, float, 'x-coordinate [mm] of the sweep center'),
+                   Parameter('y', 0.0, float, 'y-coordinate [mm] of the sweep center'),
+                   Parameter('z', 0.0, float, 'z-coordinate [mm] of the sweep center')
+                   ]),
+        Parameter('sweep_span',
+                  [Parameter('x', 2.0, float, 'x-coordinate [mm]'),
+                   Parameter('y', 0.0, float, 'y-coordinate [mm]'),
+                   Parameter('z', 0.0, float, 'z-coordinate [mm]')
+                   ]),
+        Parameter('num_points',
+                  [Parameter('x', 15, int, 'number of x points to scan'),
+                   Parameter('y', 0, int, 'number of y points to scan'),
+                   Parameter('z', 0, int, 'number of z points to scan')
+                   ]),
+        Parameter('do_optimize',
+                  [Parameter('on', True, bool, 'choose whether to do fluorescence optimization'),
+                   Parameter('frequency', 3, int, 'do the optimization once per N points'),
+                   ]),
+
+    ]
+    _INSTRUMENTS = {'XServo': MagnetX, 'YServo': MagnetY, 'ZServo': MagnetZ}
+    _SCRIPTS = {'esr': MultiESR, 'optimize': optimize}
+
+    def __init__(self, scripts, name=None, settings=None, instruments=None, log_function=None, timeout=1000000000,
+                 data_path=None):
+        """
+        Example of a script that makes use of an instrument
+        Args:
+            instruments: instruments the script will make use of
+            name (optional): name of script, if empty same as class name
+            settings (optional): settings for this script, if empty same as default settings
+        """
+
+        # call init of superclass
+        Script.__init__(self, name, scripts=scripts, settings=settings, instruments=instruments,
+                        log_function=log_function, data_path=data_path)
+
+    def _get_instr(self):
+        """
+        Assigns an instrument relevant to the 1D scan axis.
+        """
+        if self.settings['scan_axis'] == 'x':
+            return self.instruments['XServo']['instance']
+        elif self.settings['scan_axis'] == 'y':
+            return self.instruments['YServo']['instance']
+        elif self.settings['scan_axis'] == 'z':
+            return self.instruments['ZServo']['instance']
+
+    def _get_scan_positions(self, verbose=True):
+        '''
+        Returns an array of points to go to in the 1D scan.
+        '''
+        if self.settings['scan_axis'] in ['x', 'y', 'z']:
+            min_pos = self.settings['sweep_center'][self.settings['scan_axis']] - 0.5 * self.settings['sweep_span'][
+                self.settings['scan_axis']]
+
+            max_pos = self.settings['sweep_center'][self.settings['scan_axis']] + 0.5 * self.settings['sweep_span'][
+                self.settings['scan_axis']]
+            num_points = self.settings['num_points'][self.settings['scan_axis']]
+            scan_pos = [np.linspace(min_pos, max_pos, num_points)]
+            if verbose:
+                print('-------------Scan Settings---------------')
+                print('Scan axis:' + self.settings['scan_axis'])
+                print('Values for the primary scan are (in mm):' + self.settings['scan_axis'] + ' = ', scan_pos)
+
+            return scan_pos
+        else:
+            print('NotImplementedError: multiple dimensional scans not yet implemented')
+            NotImplementedError('multiple dimensional scans not yet implemented')
+
+    @staticmethod
+    def pts_to_extent(pta, ptb):
+        """
+        Args:
+            pta: point a
+            ptb: point b
+            roi_mode:   mode how to calculate region of interest
+                        corner: pta and ptb are diagonal corners of rectangle.
+                        center: pta is center and ptb is extend or rectangle
+
+        Returns: extend of region of interest [xVmin, xVmax, yVmax, yVmin]
+        """
+        xVmin = pta['x'] - float(ptb['x']) / 2.
+        xVmax = pta['x'] + float(ptb['x']) / 2.
+        yVmin = pta['y'] - float(ptb['y']) / 2.
+        yVmax = pta['y'] + float(ptb['y']) / 2.
+        zVmin = pta['z'] - float(ptb['z']) / 2.
+        zVmax = pta['z'] + float(ptb['z']) / 2.
+
+        return [xVmin, xVmax, yVmin, yVmax, zVmin, zVmax]
+
+    def _function(self):
+
+        if self.settings['to-do'] == 'read':
+            Zservo_position = self.instruments['ZServo']['instance'].get_current_position()
+            self.log('MagnetZ position: {:.3f} mm'.format(Zservo_position))
+            Yservo_position = self.instruments['YServo']['instance'].get_current_position()
+            self.log('MagnetY position: {:.3f} mm'.format(Yservo_position))
+            Xservo_position = self.instruments['XServo']['instance'].get_current_position()
+            self.log('MagnetX position: {:.3f} mm'.format(Xservo_position))
+
+        else:
+            # initialize the servo positions
+            if self.settings['servo_initial']['initialize'] or self.settings['to-do'] == 'initialize':
+                print('----------- Servo Initialization -----------')
+                print('Xservo:')
+                self.instruments['XServo']['instance'].update(
+                    {'lower_limit': self.settings['servo_initial']['Xservo_min']})
+                self.instruments['XServo']['instance'].update(
+                    {'upper_limit': self.settings['servo_initial']['Xservo_max']})
+
+                if self.settings['servo_initial']['Xservo'] <= self.settings['servo_initial']['Xservo_max'] and \
+                        self.settings['servo_initial']['Xservo'] >= self.settings['servo_initial']['Xservo_min']:
+                    self.instruments['XServo']['instance'].enable_motion()
+                    error_code_x = self.instruments['XServo']['instance'].absolute_move(
+                        target=self.settings['servo_initial']['Xservo'])
+                    self.instruments['XServo']['instance'].disable_motion()
+                    if error_code_x != 0:
+                        print('Xservo fails to initialize. Experiment stopped. self._abort = True')
+                        self._abort = True
+                else:
+                    print('Xservo exceeds limit. No action.')
+
+                print('Yservo:')
+                self.instruments['YServo']['instance'].update(
+                    {'lower_limit': self.settings['servo_initial']['Yservo_min']})
+                self.instruments['YServo']['instance'].update(
+                    {'upper_limit': self.settings['servo_initial']['Yservo_max']})
+                if self.settings['servo_initial']['Yservo'] <= self.settings['servo_initial']['Yservo_max'] and \
+                        self.settings['servo_initial']['Yservo'] >= self.settings['servo_initial']['Yservo_min']:
+                    self.instruments['YServo']['instance'].enable_motion()
+                    error_code_y = self.instruments['YServo']['instance'].absolute_move(
+                        target=self.settings['servo_initial']['Yservo'])
+                    self.instruments['YServo']['instance'].disable_motion()
+                    if error_code_y != 0:
+                        print('Yservo fails to initialize. Experiment stopped. self._abort = True')
+                        self._abort = True
+                else:
+                    print('Yservo exceeds limit. No action.')
+
+                print('Zservo:')
+                self.instruments['ZServo']['instance'].update(
+                    {'lower_limit': self.settings['servo_initial']['Zservo_min']})
+                self.instruments['ZServo']['instance'].update(
+                    {'upper_limit': self.settings['servo_initial']['Zservo_max']})
+                if self.settings['servo_initial']['Zservo'] <= self.settings['servo_initial']['Zservo_max'] and \
+                        self.settings['servo_initial']['Zservo'] >= self.settings['servo_initial']['Zservo_min']:
+                    self.instruments['ZServo']['instance'].enable_motion()
+                    error_code_z = self.instruments['ZServo']['instance'].absolute_move(
+                        target=self.settings['servo_initial']['Zservo'])
+                    self.instruments['ZServo']['instance'].disable_motion()
+
+                    if error_code_z != 0:
+                        print('Zservo fails to initialize. Experiment stopped. self._abort = True')
+                        self._abort = True
+                else:
+                    print('Zservo exceeds limit. No action.')
+
+                Zservo_position = self.instruments['ZServo']['instance'].get_current_position()
+                self.log('MagnetZ position: {:.3f} mm'.format(Zservo_position))
+                Yservo_position = self.instruments['YServo']['instance'].get_current_position()
+                self.log('MagnetY position: {:.3f} mm'.format(Yservo_position))
+                Xservo_position = self.instruments['XServo']['instance'].get_current_position()
+                self.log('MagnetX position: {:.3f} mm'.format(Xservo_position))
+
+                print('>>>> Servo initialization done')
+
+            if self.settings['to-do'] == 'move':
+                print('----------- Servo moving along the scanning axis -----------')
+                scan_instr = self._get_instr()
+                print('     ' + self.settings['scan_axis'][0] + ' Servo is moving to ' + self.settings['scan_axis'][
+                    0] + ' = ' + str(self.settings['move_to'][self.settings['scan_axis'][0]]) + 'mm')
+                scan_instr.enable_motion()
+                servo_move = scan_instr.absolute_move(self.settings['move_to'][self.settings['scan_axis'][0]])
+                if servo_move != 0:
+                    print(
+                        self.settings['scan_axis'] + 'servo fails to move. Experiment stopped. self._abort = True')
+                    self._abort = True
+                scan_instr.disable_motion()
+                Zservo_position = self.instruments['ZServo']['instance'].get_current_position()
+                self.log('MagnetZ position: {:.3f} mm'.format(Zservo_position))
+                Yservo_position = self.instruments['YServo']['instance'].get_current_position()
+                self.log('MagnetY position: {:.3f} mm'.format(Yservo_position))
+                Xservo_position = self.instruments['XServo']['instance'].get_current_position()
+                self.log('MagnetX position: {:.3f} mm'.format(Xservo_position))
+
+                print('>>>> Servo Moving done')
+
+            elif self.settings['to-do'] == 'sweep':
+                                # 1D scan (forward and backward) (note that 2D scan is disabled for now)
+                # get the relevant instrument (servo) for controlling the magnet.
+                scan_instr = self._get_instr()
+                scan_instr.enable_motion()
+                # get positions for the scan.
+                scan_pos = self._get_scan_positions()
+
+                # forward and backward sweeps
+                self.data = {'positions': scan_pos[0], 'positions_r':scan_pos[0][::-1]}
+                self.positions = {'positions': deque()}
+
+                # loop over scan positions and call the scripts
+                index = 0
+                # 1D Forward Sweep
+                for pos_index in range(0, len(self.data['positions'])):
+                    print('len(self.data[]', len(self.data['positions']))
+                    if self._abort:
+                        break
+
+                    # Set the magnet to be at the initial position
+                    new_pos = float(self.data['positions'][pos_index])
+                    print('============= Start (index = ' + str(index) + ', Forward) =================')
+                    print('----------- Magnet Position: {:0.2f} mm -----------'.format(new_pos))
+                    servo_move = scan_instr.absolute_move(new_pos)
+                    # If this is not within the safety limits of the instruments, it will not actually move and say so in the log
+                    if servo_move != 0:
+                        print(self.settings['scan_axis'][0] + 'servo fails to move. Experiment stopped.')
+                        self._abort = True
+                        break
+
+                    # Tracking
+                    if self.settings['do_optimize']['on'] and index >= 0 and index % self.settings['do_optimize'][
+                        'frequency'] == 0 and not self._abort:
+                        self.scripts['optimize'].settings['tag'] = 'optimize' + '_ind' + str(index)
+                        print('Now optimizing the focus ...')
+                        self.scripts['optimize'].run()
+
+
+                    self.scripts['esr'].settings['tag'] = 'multiesr_' + str(index)
+                    self.scripts['esr'].run()
+                    # record the position
+                    self.positions['positions'].append(new_pos)
+                    self.progress = index * 100. / len(self.data['positions'])
+                    self.updateProgress.emit(int(self.progress))
+
+                    index += 1
+                # the end of the for loop for the forward 1D sweep
+
+
+    def _plot(self, axes_list, data=None):
+        if data is None:
+            data = self.data
+
+        axes_list[0].clear()
+        if self._current_subscript_stage['current_subscript'] == self.scripts['esr']:
+            self.scripts['esr']._plot([axes_list[0]])
+        elif self._current_subscript_stage['current_subscript'] == self.scripts['optimize']:
+            self.scripts['optimize']._plot([axes_list[0]])
+
+    def _update_plot(self, axes_list):
+
+        try:
+            if self._current_subscript_stage['current_subscript'] == self.scripts['esr']:
+                self.scripts['esr']._update_plot([axes_list[0]])
+            elif self._current_subscript_stage['current_subscript'] == self.scripts['optimize']:
+                self.scripts['optimize']._update_plot([axes_list[3]])
+        except Exception as e:
+            print('** ATTENTION in scanning_esr _update_plot **')
+            print(e)
+            self._plot(axes_list)
+
+
+    def get_axes_layout(self, figure_list):
+        """
+        returns the axes objects the script needs to plot its data
+        this overwrites the default get_axis_layout in PyLabControl.src.core.scripts
+        Args:
+            figure_list: a list of figure objects
+        Returns:
+            axes_list: a list of axes objects
+        """
+        axes_list = []
+        if self._plot_refresh is True:
+            for fig in figure_list:
+                fig.clf()
+            axes_list.append(figure_list[1].add_subplot(111))  # axes_list[1]
+
+        else:
+            axes_list.append(figure_list[1].axes[0])
         return axes_list

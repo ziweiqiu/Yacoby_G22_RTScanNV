@@ -738,9 +738,9 @@
                         },
                         "sensing_type": "cosine",
                         "read_out": {
-                            "meas_len": 200,
+                            "meas_len": 180,
                             "nv_reset_time": 2000,
-                            "delay_readout": 400,
+                            "delay_readout": 370,
                             "laser_off": 500,
                             "delay_mw_readout": 600
                         },
@@ -1480,9 +1480,9 @@
                         },
                         "sensing_type": "cosine",
                         "read_out": {
-                            "meas_len": 200,
+                            "meas_len": 180,
                             "nv_reset_time": 2000,
-                            "delay_readout": 400,
+                            "delay_readout": 370,
                             "laser_off": 500,
                             "delay_mw_readout": 600
                         },
@@ -3946,10 +3946,10 @@
                     "y": 0
                 },
                 "num_points": 100,
-                "scan_speed": 0.04,
+                "scan_speed": 0.02,
                 "gate_type": "analog",
                 "do_afm1d": {
-                    "before": true,
+                    "before": false,
                     "num_of_cycles": 1,
                     "after": true
                 },

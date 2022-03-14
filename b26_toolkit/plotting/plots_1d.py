@@ -109,7 +109,7 @@ def plot_esr(axes, frequency, counts, fit_params=None, plot_marker_data='b', plo
     if fit_params is not None and len(fit_params) and fit_params[0] != -1:  # check if fit valid
         if len(fit_params) == 4:  # single peak
             fit_data = lorentzian(frequency, *fit_params)
-            title = 'ESR, mean counts: {:0.2f}kcps\nfo={:0.2f}MHz, wo={:0.2f}MHz, a0 = {:.2f} %\nLO={:0.3f}GHz, RF power: {:.2f}dBm'.format(
+            title = 'ESR, mean counts: {:0.2f}kcps (fo={:0.2f}MHz, wo={:0.2f}MHz, a0 = {:.2f} %)\nLO={:0.3f}GHz, RF power: {:.2f}dBm'.format(
                 avg_counts, (fit_params[2]-LO) / 1E6, fit_params[3] / 1E6, fit_params[1] * 100, LO/1E9, mw_power)
         elif len(fit_params) == 7:  # double peak
             B_mag, angle = B_field(fit_params[5], fit_params[6], D, gama)
@@ -127,7 +127,7 @@ def plot_esr(axes, frequency, counts, fit_params=None, plot_marker_data='b', plo
     if fit_data is not None:
         axes.plot(freq_to_plot, fit_data)
 
-    axes.set_title(title)
+    axes.set_title(title, fontsize=9.5)
     axes.set_xlabel('Frequency (MHz)')
     axes.set_ylabel('Counts')
 
@@ -611,7 +611,8 @@ def update_counts_vs_pos(axis, data, pos):
     axis.autoscale_view()
 
 
-def plot_counts_vs_pos_multilines(axis, data, pos, x_label=None, y_label=None, title=None, marker=None):
+def plot_counts_vs_pos_multilines(axis, data, pos, x_label=None, y_label=None, title=None,
+                                  marker=None, moving_average = 0):
     """
     plots counts vs. position
      counts: 2D matrix
@@ -633,18 +634,36 @@ def plot_counts_vs_pos_multilines(axis, data, pos, x_label=None, y_label=None, t
         axis.set_title(title)
 
     num_of_lines = data.shape[0]
+
+    def smooth(a, n=3):
+        ret = np.cumsum(a, dtype=float)
+        ret[n:] = ret[n:] - ret[:-n]
+        return ret[n - 1:] / n
+
     if marker:
         for i in range(num_of_lines):
             if i % 2 == 1:
-                axis.plot(pos, data[i], marker, linestyle='dashed', linewidth=2.0, label='trace {:d}'.format(i))
+                if moving_average!=0:
+                    axis.plot(pos[moving_average-1:], smooth(data[i], n=moving_average), marker, linestyle='dashed', linewidth=2.0, label='trace {:d}'.format(i))
+                else:
+                    axis.plot(pos, data[i], marker, linestyle='dashed', linewidth=2.0, label='trace {:d}'.format(i))
             else:
-                axis.plot(pos, data[i], marker, linewidth=2.0, label='trace {:d}'.format(i))
+                if moving_average != 0:
+                    axis.plot(pos[moving_average-1:], smooth(data[i], n=moving_average), marker, linewidth=2.0, label='trace {:d}'.format(i))
+                else:
+                    axis.plot(pos, data[i], marker, linewidth=2.0, label='trace {:d}'.format(i))
     else:
         for i in range(num_of_lines):
             if i % 2 == 1:
-                axis.plot(pos, data[i], linestyle='dashed', linewidth=2.0, label='trace {:d}'.format(i))
+                if moving_average != 0:
+                    axis.plot(pos[moving_average-1:], smooth(data[i], n=moving_average), linestyle='dashed', linewidth=2.0, label='trace {:d}'.format(i))
+                else:
+                    axis.plot(pos, data[i], linestyle='dashed', linewidth=2.0, label='trace {:d}'.format(i))
             else:
-                axis.plot(pos, data[i], linewidth=2.0, label='trace {:d}'.format(i))
+                if moving_average != 0:
+                    axis.plot(pos[moving_average-1:], smooth(data[i], n=moving_average), linewidth=2.0, label='trace {:d}'.format(i))
+                else:
+                    axis.plot(pos, data[i], linewidth=2.0, label='trace {:d}'.format(i))
 
     axis.legend(loc = 'upper right')
 
@@ -652,7 +671,9 @@ def plot_counts_vs_pos_multilines(axis, data, pos, x_label=None, y_label=None, t
 def plot_qmsimulation_samples(axis, data):
     channels = {'A1': 'I', 'A2': 'Q','A3': 'qe1','A4': 'qe2', 'A5': 'gate', 'A6': 'subqubit','D1': 'laser', 'D2': 'APD', 'D3': 'switch', 'D4': 'd_gate1', 'D5': 'd_gate2'}
 
+    # axis.get_legend().remove()
     axis.clear()
+
     for analog_key in list(data['analog'].keys()):
         # In reality, analog pulses usually arrive 35*4ns later than the digital pulses.
         axis.plot([0] * 140+ data['analog'][analog_key].tolist(), label='A' + analog_key + ':' + channels['A' + analog_key], lw=1)
@@ -661,6 +682,6 @@ def plot_qmsimulation_samples(axis, data):
             axis.plot(data['digital'][digital_key], label='D' + digital_key + ':' + channels['D' + digital_key], ls='--', lw=0.75)
     axis.set_xlabel('Time [ns]')
     axis.set_ylabel('Signal [V]')
-    # axis.legend(loc = 'center right')
-    axis.legend(loc='upper center', bbox_to_anchor=(1.1, 1.2), ncol=1, fontsize=9)
+    axis.legend(fontsize=7)
+    # axis.legend(loc='upper center', bbox_to_anchor=(1.1, 1.2), ncol=1, fontsize=7)
     axis.set_title('QM Channel Output Simulation')

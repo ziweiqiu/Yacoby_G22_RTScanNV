@@ -485,7 +485,7 @@ class RabiQM(Script):
                                 self.settings['mw_pulses']['mw_power'], self.settings['mw_pulses']['mw_frequency'] * 1e-9,
                                 self.settings['mw_pulses']['IF_amp'], self.settings['mw_pulses']['IF_frequency'] * 1e-6))
                     else:
-                        axes_list[0].set_title('{:0.1f}kcps'.format(data['ref_cnts']))
+                        axes_list[0].set_title('{:0.1f}kcps, {:0.2f}MHz'.format(data['ref_cnts'], data['rabi_freq']))
                     axes_list[0].set_xlabel('Rabi tau [ns]')
                     axes_list[0].set_ylabel('Contrast')
 
@@ -1848,6 +1848,91 @@ class ESRQM_FitGuaranteed(Script):
                 fig.clf()  # this is to make the plot refresh faster
         new_figure_list = [figure_list[1]]
         return super(ESRQM_FitGuaranteed, self).get_axes_layout(new_figure_list)
+
+
+class MultiESR(Script):
+    """
+        This class runs separate ESR scans to complete a braod frequency range.
+        -Ziwei Qiu 2/10/2022
+    """
+    _DEFAULT_SETTINGS = [
+        Parameter('lo_freq_a', 1.5e9, float, 'LO frequency in Hz'),
+        Parameter('lo_freq_b', 3e9, float, 'LO frequency in Hz'),
+        Parameter('freq_step', 5e8, float, 'frequency step in Hz'),
+    ]
+
+    _INSTRUMENTS = {}
+    _SCRIPTS = {'esr': ESRQM}
+
+    def __init__(self, instruments=None, scripts=None, name=None, settings=None, log_function=None, data_path=None):
+        """
+        Example of a script that emits a QT signal for the gui
+        Args:
+            name (optional): name of script, if empty same as class name
+            settings (optional): settings for this script, if empty same as default settings
+        """
+        Script.__init__(self, name, settings=settings, instruments=instruments, scripts=scripts,
+                        log_function=log_function, data_path=data_path)
+
+    def _function(self):
+        freq_array = np.arange(self.settings['lo_freq_a'], self.settings['lo_freq_b']+self.settings['freq_step'],
+                               self.settings['freq_step'])
+        print('LO array:', freq_array)
+        self.data = {'lo_freq_array': freq_array}
+        i = 0
+        for freq in freq_array:
+            if self._abort:
+                break
+            try:
+                self.scripts['esr'].settings['tag'] = 'esr_' + str(i)
+                self.scripts['esr'].settings['mw_frequency'] = float(freq)
+                self.scripts['esr'].run()
+            except Exception as e:
+                print('** ATTENTION **')
+                print(e)
+            i+=1
+            # self.progress = i * 100. / len(freq_array)
+            # self.updateProgress.emit(int(self.progress))
+
+    def _plot(self, axes_list, data=None):
+        if data is None:
+            data = self.data
+
+        axes_list[0].clear()
+        if self._current_subscript_stage['current_subscript'] == self.scripts['esr']:
+            self.scripts['esr']._plot([axes_list[0]])
+
+    def _update_plot(self, axes_list):
+        try:
+            if self._current_subscript_stage['current_subscript'] == self.scripts['esr']:
+
+                self.scripts['esr']._update_plot([axes_list[0]])
+        except Exception as e:
+            print('** ATTENTION in scanning_esr _update_plot **')
+            print(e)
+            self._plot(axes_list)
+
+    def get_axes_layout(self, figure_list):
+        """
+            returns the axes objects the script needs to plot its data
+            this overwrites the default get_axis_layout in PyLabControl.src.core.scripts
+            Args:
+                figure_list: a list of figure objects
+            Returns:
+                axes_list: a list of axes objects
+        """
+        axes_list = []
+        if self._plot_refresh is True:
+            for fig in figure_list:
+                fig.clf()
+            axes_list.append(figure_list[1].add_subplot(111))  # axes_list[2]
+
+        else:
+            axes_list.append(figure_list[1].axes[0])
+
+        return axes_list
+
+
 
 #
 # class PulsedESR(Script):
