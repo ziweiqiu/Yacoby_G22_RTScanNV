@@ -1,0 +1,41 @@
+{
+    "scripts": {
+        "CountsMWAmpMod": {
+            "class": "CountsMWAmpMod",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\scripts\\scanning\\magnon.py",
+            "info": "This class runs ESR on an NV center. MW frequency is swept by sweeping the IF frequency output by the QM.\n- Ziwei Qiu 9/18/2020",
+            "package": "b26_toolkit",
+            "instruments": {
+                "mw_gen_iq": {
+                    "class": "SGS100ARFSource",
+                    "settings": {
+                        "VISA_address": "USB0::0x0AAD::0x0088::110207::0::INSTR",
+                        "frequency": 2870000000.0,
+                        "amplitude": -50,
+                        "enable_output": false,
+                        "enable_IQ": false,
+                        "ext_trigger": false
+                    }
+                }
+            },
+            "settings": {
+                "IP_address": "automatic",
+                "to_do": "execution",
+                "power_out": -15.0,
+                "mw_frequency": 2870000000.0,
+                "IF_frequency": 0.0,
+                "IF_amp_1": 1.0,
+                "IF_amp_2": 0.0,
+                "time_per_pt": 20000,
+                "rep_num": 5000,
+                "read_out": {
+                    "meas_len": 19000
+                },
+                "simulation_duration": 10000,
+                "path": "",
+                "tag": "countsmwampmod",
+                "save": false
+            }
+        }
+    }
+}
