@@ -56,7 +56,7 @@ def plot_psd(freq, psd, axes, y_scaling='log', x_scaling='lin'):
 
 
 def plot_esr(axes, frequency, counts, fit_params=None, plot_marker_data='b', plot_marker_fit='r', linestyle='-',
-             marker='.', avg_counts=0, mw_power=0, D=2.87E9, gama=2.8028E6, err=None, LO=0):
+             marker='.', avg_counts=0, mw_power=0, D=2.87E9, gama=2.8028E6, err=None, LO=0, generator=None):
     """
     plots the esr
     Args:
@@ -127,6 +127,8 @@ def plot_esr(axes, frequency, counts, fit_params=None, plot_marker_data='b', plo
     if fit_data is not None:
         axes.plot(freq_to_plot, fit_data)
 
+    if generator is not None:
+        title += ', '+generator
     axes.set_title(title, fontsize=9.5)
     axes.set_xlabel('Frequency (MHz)')
     axes.set_ylabel('Counts')
@@ -669,7 +671,9 @@ def plot_counts_vs_pos_multilines(axis, data, pos, x_label=None, y_label=None, t
 
 
 def plot_qmsimulation_samples(axis, data):
-    channels = {'A1': 'I', 'A2': 'Q','A3': 'qe1','A4': 'qe2', 'A5': 'gate', 'A6': 'subqubit','D1': 'laser', 'D2': 'APD', 'D3': 'switch', 'D4': 'd_gate1', 'D5': 'd_gate2'}
+    channels = {'A1': 'I', 'A2': 'Q','A3': 'qe1','A4': 'qe2', 'A5': 'gate', 'A6': 'subqubit',
+                'A9': 'I2', 'A10': 'Q2',
+                'D1': 'laser', 'D2': 'APD', 'D3': 'switch', 'D4': 'd_gate1', 'D5': 'd_gate2', 'D8': 'switch2'}
 
     # axis.get_legend().remove()
     axis.clear()

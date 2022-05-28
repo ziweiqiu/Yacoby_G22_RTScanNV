@@ -4,6 +4,7 @@ from pylabcontrol.core import Script, Parameter
 from b26_toolkit.scripts.set_laser import SetScannerXY_gentle
 from b26_toolkit.scripts.galvo_scan.confocal_scan_G22B import AFM1D_qm
 from b26_toolkit.scripts.qm_scripts.basic import RabiQM
+from b26_toolkit.scripts.optimize import optimize
 
 
 class ScanningRabi(Script):
@@ -24,6 +25,13 @@ class ScanningRabi(Script):
         Parameter('num_points', 20, int, 'number of points for NV measurement'),
         Parameter('scan_speed', 0.04, [0.01, 0.02, 0.04, 0.06, 0.08, 0.1],
                   '[V/s] scanning speed on average. suggest 0.04V/s, i.e. 200nm/s.'),
+        Parameter('do_optimize',
+                  [Parameter('on', True, bool, 'choose whether to do fluorescence optimization'),
+                   Parameter('frequency', 50, int, 'do the optimization once per N points')]),
+        Parameter('do_afm1d',
+                  [Parameter('after', True, bool,
+                             'whether to scan back to the original point after the experiment is done'),
+                   ]),
         Parameter('mw_pulses', [
             Parameter('mw_frequency', 2.87e9, float, 'LO frequency in Hz'),
             Parameter('mw_power', -10.0, float, 'RF power in dBm'),
@@ -37,10 +45,11 @@ class ScanningRabi(Script):
             Parameter('time_step', 16, int,
                       'time step increment of rabi pulse duration (in ns), using multiples of 4ns')
         ]),
-        Parameter('rabi_rep_num', 500000, int, 'define the repetition number for rabi')
+        Parameter('rabi_rep_num', 100000, int, 'define the repetition number for rabi')
     ]
     _INSTRUMENTS = {}
-    _SCRIPTS = {'rabi': RabiQM, 'set_scanner': SetScannerXY_gentle, 'afm1d': AFM1D_qm}
+    _SCRIPTS = {'rabi': RabiQM, 'set_scanner': SetScannerXY_gentle, 'afm1d': AFM1D_qm, 'afm1d_before_after': AFM1D_qm,
+                'optimize': optimize}
 
     def __init__(self, instruments=None, scripts=None, name=None, settings=None, log_function=None, data_path=None):
         """
@@ -86,6 +95,21 @@ class ScanningRabi(Script):
         self.scripts['rabi'].settings['tau_times']['time_step'] = self.settings['tau_times']['time_step']
         self.scripts['rabi'].settings['rep_num'] = self.settings['rabi_rep_num']
 
+    def do_afm1d_after(self, verbose = True):
+        if verbose:
+            print('===> AFM1D starts after the sensing experiments.')
+        self.scripts['afm1d_before_after'].settings['tag'] = 'afm1d_after'
+        self.scripts['afm1d_before_after'].settings['scan_speed'] = self.settings['scan_speed']
+        self.scripts['afm1d_before_after'].settings['resolution'] = 0.0001
+        self.scripts['afm1d_before_after'].settings['num_of_rounds'] = 1
+        self.scripts['afm1d_before_after'].settings['ending_behavior'] = 'leave_at_last'
+        self.scripts['afm1d_before_after'].settings['height'] = 'relative'
+        self.scripts['afm1d_before_after'].settings['point_a']['x'] = self.settings['point_b']['x']
+        self.scripts['afm1d_before_after'].settings['point_a']['y'] = self.settings['point_b']['y']
+        self.scripts['afm1d_before_after'].settings['point_b']['x'] = self.settings['point_a']['x']
+        self.scripts['afm1d_before_after'].settings['point_b']['y'] = self.settings['point_a']['y']
+        self.scripts['afm1d_before_after'].run()
+
     def _function(self):
 
         scan_pos_1d, dist_array = self._get_scan_array()
@@ -103,6 +127,10 @@ class ScanningRabi(Script):
         self.scripts['set_scanner'].settings['point']['x'] = self.settings['point_a']['x']
         self.scripts['set_scanner'].settings['point']['y'] = self.settings['point_a']['y']
         self.scripts['set_scanner'].run()
+
+        if not self._abort and self.settings['do_optimize']['on']:
+            self.scripts['optimize'].settings['tag'] = 'optimize' + '_0'
+            self.scripts['optimize'].run()
 
         self.data = {'scan_pos_1d': scan_pos_1d, 'rabi_dist_array': np.array([]), 'rabi_freq': np.array([]),
                      'afm_dist_array': np.array([]), 'afm_ctr': np.array([]), 'afm_analog': np.array([])}
@@ -139,6 +167,11 @@ class ScanningRabi(Script):
                 afm_analog = self.scripts['afm1d'].data['data_analog'][0]
                 self.data['afm_analog'] = np.concatenate((self.data['afm_analog'], afm_analog))
 
+            if self.settings['do_optimize']['on'] and (i + 1) % self.settings['do_optimize'][
+                'frequency'] == 0 and not self._abort:
+                self.scripts['optimize'].settings['tag'] = 'optimize_'+str(i+1)
+                self.scripts['optimize'].run()
+
             try:
                 self.scripts['rabi'].run()
                 rabi_freq = np.array([self.scripts['rabi'].data['rabi_freq']])
@@ -149,12 +182,17 @@ class ScanningRabi(Script):
                 self.data['rabi_freq'] = np.concatenate((self.data['rabi_freq'], rabi_freq))
                 self.data['rabi_dist_array'] = np.concatenate((self.data['rabi_dist_array'], np.array([dist_array[i + 1]])))
 
+        if self.settings['do_afm1d']['after'] and not self._abort:
+            self.do_afm1d_after()
+
     def _plot(self, axes_list, data=None):
         if data is None:
             data = self.data
 
         if self._current_subscript_stage['current_subscript'] == self.scripts['rabi']:
             self.scripts['rabi']._plot([axes_list[3]], title=False)
+        elif self._current_subscript_stage['current_subscript'] == self.scripts['optimize']:
+            self.scripts['optimize']._plot([axes_list[4]])
 
         axes_list[0].clear()
         axes_list[1].clear()
@@ -183,6 +221,11 @@ class ScanningRabi(Script):
     def _update_plot(self, axes_list):
         if self._current_subscript_stage['current_subscript'] == self.scripts['rabi']:
             self.scripts['rabi']._update_plot([axes_list[3]], title=False)
+        elif self._current_subscript_stage['current_subscript'] == self.scripts['optimize']:
+            self.scripts['optimize']._plot([axes_list[4]])
+        elif self._current_subscript_stage['current_subscript'] == self.scripts['afm1d_before_after']:
+            self.scripts['afm1d_before_after']._update_plot([axes_list[3], axes_list[4]], title=False)
+
         else:
             if len(self.data['afm_dist_array']) > 0:
                 axes_list[0].lines[0].set_xdata(self.data['afm_dist_array'])
@@ -217,12 +260,14 @@ class ScanningRabi(Script):
             axes_list.append(figure_list[0].add_subplot(311))  # axes_list[0]
             axes_list.append(figure_list[0].add_subplot(312))  # axes_list[1]
             axes_list.append(figure_list[0].add_subplot(313))  # axes_list[2]
-            axes_list.append(figure_list[1].add_subplot(111))  # axes_list[3]
+            axes_list.append(figure_list[1].add_subplot(121))  # axes_list[3]
+            axes_list.append(figure_list[1].add_subplot(122))  # axes_list[4]
 
         else:
             axes_list.append(figure_list[0].axes[0])
             axes_list.append(figure_list[0].axes[1])
             axes_list.append(figure_list[0].axes[2])
             axes_list.append(figure_list[1].axes[0])
+            axes_list.append(figure_list[1].axes[1])
 
         return axes_list

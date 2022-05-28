@@ -622,7 +622,7 @@ class ObjectiveScan_qm(Script):
                                                  self.settings['num_points'][self.var1])),
                          'bounds': [self.var1range[0], self.var1range[1],
                                     self.var2range[0], self.var2range[1]]}
-            image_data
+            self.data['extent'] = [self.var1range[0], self.var1range[1], self.var2range[1], self.var2range[0]]
             self.data['varlbls'] = [self.var1 + ' [V]', self.var2 + ' [V]']
 
             # objective takes longer to settle after big jump, so give it time before starting scan:

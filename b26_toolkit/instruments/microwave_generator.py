@@ -22,23 +22,22 @@ from pylabcontrol.core import Parameter, Instrument
 import time
 
 
-class AgilentMicrowaveGenerator(Instrument):
+class AgilentN9310A(Instrument):
     """
         This class implements the Agilent microwave generator N9310A. The class commuicates with the device over USB.
         manual: https://www.keysight.com/upload/cmc_upload/All/N9310AUsersGuide.pdf
 
-        -Ziwei (1/31/2019 4:05pm)
+        -Ziwei 5/20/2022
     """
 
     _DEFAULT_SETTINGS = Parameter([
-        Parameter('VISA_address', 'USB0::0x0957::0x2018::01152687::0::INSTR',
-                  ['USB0::0x0957::0x2018::01152687::0::INSTR'], 'VISA address of the instrument'),
-        Parameter('reference_oscillator', 'EXT10MHZ', ['INT10MHZ', 'EXT2MHZ', 'EXT5MHZ', 'EXT10MHZ'],
+        Parameter('VISA_address', 'USB0::0x0957::0x2018::01152687::INSTR',
+                  ['USB0::0x0957::0x2018::01152687::INSTR'], 'VISA address of the instrument'),
+        Parameter('reference_oscillator', 'INT10MHZ', ['INT10MHZ', 'EXT2MHZ', 'EXT5MHZ', 'EXT10MHZ'],
                   'choose the reference oscillator'),
         Parameter('enable_output', False, bool, 'Type-N RF output enabled'),
         Parameter('enable_modulation', False, bool, 'enable modulation'),
         Parameter('enable_IQ', False, bool, 'enable IQ modulation (only IQ is implemented for now)'),
-        # Parameter('modulation_type', 'IQ', ['IQ'],'choose the modulation type (only IQ is implemented for now)'),
         Parameter('freq_mode', 'CW', ['CW', 'Sweep'], 'select the frequency mode'),
         Parameter('power_mode', 'CW', ['CW', 'Sweep'], 'select the power mode'),
         Parameter('edge', 'Positive', ['Positive', 'Negative'], 'select the external triggerring edge'),
@@ -58,7 +57,7 @@ class AgilentMicrowaveGenerator(Instrument):
 
     def __init__(self, name=None, settings=None):
 
-        super(AgilentMicrowaveGenerator, self).__init__(name, settings)
+        super(AgilentN9310A, self).__init__(name, settings)
 
         # XXXXX MW ISSUE = START
         # ===========================================
@@ -89,7 +88,7 @@ class AgilentMicrowaveGenerator(Instrument):
 
         """
 
-        super(AgilentMicrowaveGenerator, self).update(settings)
+        super(AgilentN9310A, self).update(settings)
         # XXXXX MW ISSUE = START
         # ===========================================
         RF_RANGE_MIN = 9000  # 9 kHz
@@ -317,41 +316,6 @@ class AgilentMicrowaveGenerator(Instrument):
             print('N9310A is closing..')
 
         self.srs.close()
-
-class AgilentMicrowaveGeneratorII(AgilentMicrowaveGenerator):
-    """
-        This class implements the Agilent microwave generator N9310A. The class commuicates with the device over USB.
-        manual: https://www.keysight.com/upload/cmc_upload/All/N9310AUsersGuide.pdf
-
-        -Ziwei (2/21/2019 4:05pm)
-    """
-
-    _DEFAULT_SETTINGS = Parameter([
-        Parameter('VISA_address', 'USB0::0x0957::0x2018::01152673::0::INSTR',
-                  ['USB0::0x0957::0x2018::01152673::0::INSTR'], 'VISA address of the instrument'),
-        Parameter('reference_oscillator', 'EXT10MHZ', ['INT10MHZ', 'EXT2MHZ', 'EXT5MHZ', 'EXT10MHZ'],
-                  'choose the reference oscillator'),
-        Parameter('enable_output', False, bool, 'Type-N RF output enabled'),
-        # Parameter('enable_modulation', False, bool, 'enable modulation'),
-        # Parameter('enable_IQ', False, bool, 'enable IQ modulation (only IQ is implemented for now)'),
-        # Parameter('modulation_type', 'IQ', ['IQ'],'choose the modulation type (only IQ is implemented for now)'),
-        Parameter('freq_mode', 'CW', ['CW', 'Sweep'], 'select the frequency mode'),
-        Parameter('power_mode', 'CW', ['CW', 'Sweep'], 'select the power mode'),
-        Parameter('edge', 'Positive', ['Positive', 'Negative'], 'select the external triggerring edge'),
-        Parameter('swp_direction', 'UP', ['UP', 'DOWN'], 'select the sweep direction'),
-        Parameter('frequency', 2.87e9, float, 'RF frequency in Hz, range: 9kHz to 3 GHz'),
-        Parameter('freq_start', 100e6, float, 'start frequency in Hz in sweep mode'),
-        Parameter('freq_stop', 400e6, float, 'stop frequency in Hz in sweep mode'),
-        Parameter('freq_pts', 100, float, 'number of sweep steps in freq sweep mode'),
-        Parameter('amplitude', -50, float, 'RF Type-N power in dBm, range: -127 to +20dBm'),
-        Parameter('pwr_start', -20, float, 'start power in dBm in sweep mode'),
-        Parameter('pwr_stop', 0, float, 'stop power in dBm in sweep mode'),
-        Parameter('pwr_pts', 20, float, 'number of sweep steps in power sweep mode'),
-        Parameter('LF_enable_output', False, bool, 'BNC LF output enabled'),
-        Parameter('LF_frequency', 100, float, 'LF frequency in Hz, range: 20Hz - 80kHz'),
-        Parameter('LF_amplitude', 0, float, 'LF output amplitude in V, range: 0 to 3Vp')
-
-    ])
 
 class R8SMicrowaveGenerator(Instrument):
     """

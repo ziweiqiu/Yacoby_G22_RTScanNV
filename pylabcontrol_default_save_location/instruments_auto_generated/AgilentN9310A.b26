@@ -1,0 +1,31 @@
+{
+    "instruments": {
+        "AgilentN9310A": {
+            "class": "AgilentN9310A",
+            "filepath": "C:\\Users\\NV\\b26_toolkit-master\\b26_toolkit\\instruments\\microwave_generator.py",
+            "info": "\n        This class implements the Agilent microwave generator N9310A. The class commuicates with the device over USB.\n        manual: https://www.keysight.com/upload/cmc_upload/All/N9310AUsersGuide.pdf\n\n        -Ziwei 5/20/2022\n    ",
+            "settings": {
+                "VISA_address": "USB0::0x0957::0x2018::01152687::INSTR",
+                "reference_oscillator": "INT10MHZ",
+                "enable_output": false,
+                "enable_modulation": false,
+                "enable_IQ": false,
+                "freq_mode": "CW",
+                "power_mode": "CW",
+                "edge": "Positive",
+                "swp_direction": "UP",
+                "frequency": 2870000000.0,
+                "freq_start": 100000000.0,
+                "freq_stop": 400000000.0,
+                "freq_pts": 100,
+                "amplitude": -50,
+                "pwr_start": -20,
+                "pwr_stop": 0,
+                "pwr_pts": 20,
+                "LF_enable_output": false,
+                "LF_frequency": 100,
+                "LF_amplitude": 0
+            }
+        }
+    }
+}

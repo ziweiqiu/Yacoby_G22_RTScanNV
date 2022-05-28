@@ -19,7 +19,7 @@
 
 from .ni_daq import NI6733, NI6602, NI6220, NI6210
 from .pulse_blaster import G22BPulseBlaster, Pulse
-from .microwave_generator import R8SMicrowaveGenerator, SGS100ARFSource
+from .microwave_generator import R8SMicrowaveGenerator, SGS100ARFSource, AgilentN9310A
 from .mw_amplifier import MWAmplifier
 from .newport_xps import XPSQ8, MagnetX, MagnetY, MagnetZ
 from .yokogawa import YokogawaGS200

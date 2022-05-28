@@ -34,12 +34,14 @@ config = {
         'con1': {
             'type': 'opx1',
             'analog_outputs': {
-                1: {'offset': 0.0},  # I
-                2: {'offset': 0.0},  # Q
-                3: {'offset': 0.0},  # Current 1 for Berry's phase detection
+                1: {'offset': 0.0},  # I for the first generator
+                2: {'offset': 0.0},  # Q for the first generator
+                3: {'offset': 0.0},  # RF switch for the first generator
                 4: {'offset': 0.0},  # Current 2 for Berry's phase detection
-                5: {'offset': 0.01},  # analog gate for ac sensing (offset is assuming 50ohm load)
+                5: {'offset': 0.0},  # analog gate for ac sensing (offset is assuming 50ohm load)
                 6: {'offset': 0.0},  # subqubit frequency
+                9: {'offset': 0.0},  # I for the second generator
+                10: {'offset': 0.0},  # Q for the second generator
                 # 7: {'offset': 0.0},  # galvo z
                 # 10: {'offset': 0.0},  # AOM for charge probe laser
             },
@@ -76,6 +78,30 @@ config = {
             },
 
         },
+
+        'qubit2': {
+                    'mixInputs': {
+                        'I': ('con1', 9),
+                        'Q': ('con1', 10),
+                        'lo_frequency': LO_freq,
+                        'mixer': 'mixer_qubit'
+                    },
+                    'intermediate_frequency': IF_freq,
+                    'operations': {
+                        'const': 'const_pulse',
+                        'pi': 'pi_pulse',
+                        'pi2': 'pi2_pulse',
+                        'pi32': 'pi32_pulse',
+                    },
+                    'digitalInputs': {
+                        "  rf_switch": {
+                            "port": ("con1", 8),
+                            "delay": delay,
+                            "buffer": rf_switch_extra_time,
+                        },
+                    },
+
+                },
 
         'sub_qubit': {
             "singleInput": {"port": ("con1", 6)},

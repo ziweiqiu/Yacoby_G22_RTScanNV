@@ -7,7 +7,7 @@ from pylabcontrol.core import Script, Parameter
 from b26_toolkit.scripts.qm_scripts.Configuration import config
 from b26_toolkit.scripts.optimize import OptimizeNoLaser
 import numpy as np
-from b26_toolkit.instruments import SGS100ARFSource, YokogawaGS200
+from b26_toolkit.instruments import SGS100ARFSource, AgilentN9310A, YokogawaGS200
 from b26_toolkit.data_processing.fit_functions import fit_exp_decay, exp_offset
 from qm.qua import frame_rotation as z_rot
 
@@ -394,13 +394,15 @@ class PDDQM(Script):
         The sequence is pi/2 - tau/4 - (tau/4 - pi  - tau/4)^n - tau/4 - pi/2
         Tau/2 is the time between the center of the pulses!
 
-        - Ziwei Qiu 9/6/2020
+        - Ziwei Qiu 9/6/2020 last update 5/23/2022
     """
     _DEFAULT_SETTINGS = [
         Parameter('IP_address', 'automatic', ['140.247.189.191', 'automatic'],
                   'IP address of the QM server'),
         Parameter('to_do', 'simulation', ['simulation', 'execution', 'reconnection'],
                   'choose to do output simulation or real experiment'),
+        Parameter('generator', 'SGS100A', ['SGS100A', 'N9310A'],
+                  'choose which generator to use'),
         Parameter('mw_pulses', [
             Parameter('mw_frequency', 2.87e9, float, 'LO frequency in Hz'),
             Parameter('mw_power', -10.0, float, 'RF power in dBm'),
@@ -439,7 +441,7 @@ class PDDQM(Script):
         Parameter('rep_num', 500000, int, 'define the repetition number'),
         Parameter('simulation_duration', 50000, int, 'duration of simulation in ns')
     ]
-    _INSTRUMENTS = {'mw_gen_iq': SGS100ARFSource}
+    _INSTRUMENTS = {'mw_gen_iq': SGS100ARFSource, 'mw_gen_iq_2':AgilentN9310A}
     _SCRIPTS = {'optimize': OptimizeNoLaser}
 
     def __init__(self, instruments=None, scripts=None, name=None, settings=None, log_function=None, data_path=None):
@@ -482,6 +484,11 @@ class PDDQM(Script):
                 config['pulses']['pi_pulse']['length'] = int(pi_time * 4)
                 config['pulses']['pi2_pulse']['length'] = int(pi2_time * 4)
                 config['pulses']['pi32_pulse']['length'] = int(pi32_time * 4)
+
+                if self.settings['generator'] == 'N9310A':
+                    config['elements']['qubit']['mixInputs']['I'] = ('con1', 9)
+                    config['elements']['qubit']['mixInputs']['Q'] = ('con1', 10)
+                    config['elements']['qubit']['digitalInputs']["  rf_switch"]["port"] = ('con1', 8)
 
                 self.qm = self.qmm.open_qm(config)
 
@@ -734,12 +741,20 @@ class PDDQM(Script):
 
     def _qm_execution(self, qua_program, job_stop):
 
-        self.instruments['mw_gen_iq']['instance'].update({'amplitude': self.settings['mw_pulses']['mw_power']})
-        self.instruments['mw_gen_iq']['instance'].update({'frequency': self.settings['mw_pulses']['mw_frequency']})
-        self.instruments['mw_gen_iq']['instance'].update({'enable_IQ': True})
-        self.instruments['mw_gen_iq']['instance'].update({'ext_trigger': True})
-        self.instruments['mw_gen_iq']['instance'].update({'enable_output': True})
-        print('Turned on RF generator SGS100A (IQ on, trigger on).')
+        if self.settings['generator'] == 'SGS100A':
+            generator = 'mw_gen_iq'
+            self.instruments[generator]['instance'].update({'ext_trigger': True})
+        else:
+            generator = 'mw_gen_iq_2'
+            self.instruments[generator]['instance'].update({'enable_modulation': True})
+            self.instruments[generator]['instance'].update({'freq_mode': 'CW'})
+            self.instruments[generator]['instance'].update({'power_mode': 'CW'})
+
+        self.instruments[generator]['instance'].update({'amplitude': self.settings['mw_pulses']['mw_power']})
+        self.instruments[generator]['instance'].update({'frequency': self.settings['mw_pulses']['mw_frequency']})
+        self.instruments[generator]['instance'].update({'enable_IQ': True})
+        self.instruments[generator]['instance'].update({'enable_output': True})
+        print('Turned on the RF generator (IQ on, trigger on).')
 
         try:
             job = self.qm.execute(qua_program, flags=['skip-add-implicit-align'])
@@ -841,10 +856,17 @@ class PDDQM(Script):
         # full_res_vec = full_res.fetch_all()
         # self.data['signal_full_vec'] = full_res_vec
 
-        self.instruments['mw_gen_iq']['instance'].update({'enable_output': False})
+        config['elements']['qubit']['mixInputs']['I'] = ('con1', 1)
+        config['elements']['qubit']['mixInputs']['Q'] = ('con1', 2)
+        config['elements']['qubit']['digitalInputs']["  rf_switch"]["port"] = ('con1', 3)
+
+        time.sleep(0.5)
+        self.instruments[generator]['instance'].update({'enable_output': False})
+        self.instruments[generator]['instance'].update({'enable_IQ': False})
         self.instruments['mw_gen_iq']['instance'].update({'ext_trigger': False})
-        self.instruments['mw_gen_iq']['instance'].update({'enable_IQ': False})
-        print('Turned off RF generator SGS100A (IQ off, trigger off).')
+        self.instruments['mw_gen_iq_2']['instance'].update({'enable_modulation': False})
+
+        print('Turned off the RF generator (IQ off, trigger off).')
 
     def NV_tracking(self):
         # need to put a find_NV script here
