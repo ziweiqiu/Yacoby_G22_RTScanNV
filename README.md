@@ -1,10 +1,11 @@
-# Python-based measurement control system for the room-temperature scanning NV setup
+# Measurement control system for the room-temperature scanning NV setup
 ## G22 @ LISE (Yacoby Lab, Harvard University)
 
 The scripts and instruments should be used with pylabcontrol (https://github.com/LISE-B26/pylabcontrol), a generic laboratory control platform for controlling scientific equipment. 
 
 ### This setup combines a confocal scanning microscope and an atomic atomic force microscope (AFM). 
-- Quantum sensing is performed on the Quantum Orchestration Platform (QOP) and AFM scanning is controlled by analog output from NI DAQs. 
+- Quantum sensing is performed by executing QUA programs on the Quantum Orchestration Platform (QOP) and AFM scanning is controlled by analog output from NI DAQs. 
+- This control system fully automates durable NV scanning probe measurements, with real-time qubit calibration, data acquisition, analysis, and visualization.
 
 ### The following instruments are used on this setup:
 
@@ -22,7 +23,7 @@ The scripts and instruments should be used with pylabcontrol (https://github.com
 - Quantum Machines Quantum Orchestration Platform (QOP):<br>
       QOP and pylabcontrol are integrated as follows. Definition, simulation and execution of QUA programs are written as part of the Script module in pylabcontrol. Parameters for QUA programs such as pulse duration, repetition number and sweep array, as well as setting parameters for other instruments, are all accessible from the pylabcontrol GUI. Data is fetched in real time through stream processing by the QM server, and visualized in GUI after simple data analysis such as normalization and fitting. In-depth data analysis can be done afterward separately.
 
-
+### Schematic of the connection on this setup:
 <img src="https://user-images.githubusercontent.com/29555981/170805568-e9b84cbe-211c-4cb9-97d7-f28d388d6e57.png" width=60% height=60%>
 
 
